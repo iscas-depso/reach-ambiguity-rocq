@@ -69,3 +69,7 @@ rg -n "Admitted|Axiom|admit|TODO|Abort" --glob "*.v" theories
 rg -n "section4_definition|section4_theorem|section4_lemma" --glob "*.v" theories
 rg -n "paper_theorem|paper_lemma|paper_definition|paper_support" --glob "*.v" theories
 ```
+
+## License
+
+This Rocq formalization is released under the MIT License. See [LICENSE](LICENSE).
