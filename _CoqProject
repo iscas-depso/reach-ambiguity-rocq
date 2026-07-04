@@ -1,0 +1,20 @@
+-Q theories PositionAutomata
+theories/Core/Syntax.v
+theories/Core/Sets.v
+theories/Core/GraphAlgorithms.v
+theories/Automata/PositionAutomaton.v
+theories/Regex/KleeneSemantics.v
+theories/Ambiguity/DegreeofAmbiguity.v
+theories/Automata/Equivalence.v
+theories/Automata/PositionCorrectness.v
+theories/Ambiguity/DegreeofInfiniteAmbiguity.v
+theories/Regex/RegexReDoS.v
+theories/Automata/EpsilonNFA.v
+theories/Regex/RegexSSS.v
+theories/Grammar/RightLinearGrammar.v
+theories/Section4/Section4LR.v
+theories/Regex/ReachAmbiguityDrance.v
+theories/Section4/Section4Examples.v
+theories/Section4/Section4PaperOrder.v
+theories/Demos/PaperExamples.v
+theories/Demos/Examples.v

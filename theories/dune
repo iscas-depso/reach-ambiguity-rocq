@@ -1,0 +1,8 @@
+(dirs :standard \ Experiments Interop)
+
+(include_subdirs qualified)
+
+(coq.theory
+ (name PositionAutomata)
+ (package position-automata)
+ (theories Stdlib))
