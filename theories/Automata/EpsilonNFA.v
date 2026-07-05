@@ -156,6 +156,13 @@ Section EpsilonNFA.
               (traces_from_fuel m (enfa_trace_bound m w) s w))
          (enfa_start (fenfa_base m))).
 
+  Definition started_traces_from_start
+      (m : finite_enfa)
+      (s : enfa_state (fenfa_base m))
+      (w : list A) : list (started_trace m) :=
+    map (fun t => (s, t))
+      (traces_from_fuel m (enfa_trace_bound m w) s w).
+
   Definition state_inb
       (m : finite_enfa)
       (q : enfa_state (fenfa_base m))
@@ -354,6 +361,16 @@ Section EpsilonNFA.
          (fun st => ends_inb m q st && epsilon_simpleb m st)
          (started_traces m w)).
 
+  Definition enfa_dra_prime_between
+      (m : finite_enfa)
+      (p : enfa_state (fenfa_base m))
+      (w : list A)
+      (q : enfa_state (fenfa_base m)) : nat :=
+    length
+      (filter
+         (fun st => ends_inb m q st && epsilon_simpleb m st)
+         (started_traces_from_start m p w)).
+
   Definition enfa_maximal_simple_reach_count
       (m : finite_enfa)
       (w : list A)
@@ -423,6 +440,12 @@ Section EpsilonNFA.
 
   Definition enfa_SUFA (m : finite_enfa) : Prop :=
     enfa_epsilon_free m /\ enfa_ReachUFA m.
+
+  Definition enfa_stUFA (m : finite_enfa) : Prop :=
+    forall p q w,
+      In p (fenfa_states m) ->
+      In q (fenfa_states m) ->
+      enfa_dra_prime_between m p w q <= 1.
 
   (* Definition 6 III. *)
   Definition enfa_LeafUFA (m : finite_enfa) : Prop :=
@@ -2773,13 +2796,6 @@ Section EpsilonNFA.
       (st : started_trace m) : bool :=
     epsilon_simpleb m st && maximal_epsilon_simpleb m st.
 
-  Definition started_traces_from_start
-      (m : finite_enfa)
-      (s : enfa_state (fenfa_base m))
-      (w : list A) : list (started_trace m) :=
-    map (fun t => (s, t))
-      (traces_from_fuel m (enfa_trace_bound m w) s w).
-
   Lemma filter_concat_map_length_sum :
     forall {B C : Type} (p : C -> bool) (f : B -> list C) xs,
       length (filter p (concat (map f xs))) =
@@ -2789,6 +2805,60 @@ Section EpsilonNFA.
     induction xs as [| x xs IH]; simpl.
     - reflexivity.
     - rewrite filter_app, length_app, IH. reflexivity.
+  Qed.
+
+  Theorem enfa_dra_prime_at_sum_between_starts :
+    forall (m : finite_enfa) w q,
+      enfa_dra_prime_at m w q =
+      sum_nats
+        (map
+           (fun s => enfa_dra_prime_between m s w q)
+           (enfa_start (fenfa_base m))).
+  Proof.
+    intros m w q.
+    unfold enfa_dra_prime_at, enfa_dra_prime_between,
+      started_traces, started_traces_from_start.
+    rewrite filter_concat_map_length_sum.
+    reflexivity.
+  Qed.
+
+  Theorem enfa_stUFA_single_start_implies_reachufa :
+    forall (m : finite_enfa),
+      finite_enfa_wf m ->
+      enfa_single_start m ->
+      enfa_stUFA m ->
+      enfa_ReachUFA m.
+  Proof.
+    intros m Hwf Hsingle Hst w q Hq.
+    rewrite enfa_dra_prime_at_sum_between_starts.
+    destruct (enfa_start (fenfa_base m)) as [| s starts] eqn:Hstarts.
+    - simpl. lia.
+    - destruct starts as [| s' starts].
+      + simpl.
+        assert (Hs : In s (fenfa_states m)).
+        {
+          eapply fenfa_starts_in_states; eauto.
+          rewrite Hstarts. simpl. auto.
+        }
+        pose proof (Hst s q w Hs Hq) as Hbetween.
+        lia.
+      + exfalso.
+        unfold enfa_single_start in Hsingle.
+        rewrite Hstarts in Hsingle. simpl in Hsingle. lia.
+  Qed.
+
+  Theorem enfa_epsilon_free_single_start_stufa_implies_sufa :
+    forall (m : finite_enfa),
+      enfa_epsilon_free m ->
+      finite_enfa_wf m ->
+      enfa_single_start m ->
+      enfa_stUFA m ->
+      enfa_SUFA m.
+  Proof.
+    intros m Heps Hwf Hsingle Hst.
+    split.
+    - exact Heps.
+    - eapply enfa_stUFA_single_start_implies_reachufa; eauto.
   Qed.
 
   Lemma sum_endpoint_counts_eq_filter_state_inb :
@@ -4294,6 +4364,174 @@ Section EpsilonNFA.
         (enfa_accepting_maximal_simple_reach_count m (w ++ suffix))
         (enfa_final_states m) f Hfinals_f) as Hmax_le_da.
       pose proof (Hufa (w ++ suffix)) as Hufa_suffix.
+      unfold enfa_da_prime_word in Hufa_suffix.
+      lia.
+  Qed.
+
+  Theorem section4_theorem2_epsilon_free_trim_ufa_implies_stufa :
+    forall (m : finite_enfa),
+      enfa_epsilon_free m ->
+      finite_enfa_wf m ->
+      enfa_single_start m ->
+      enfa_trim m ->
+      enfa_UFA m ->
+      enfa_stUFA m.
+  Proof.
+    intros m Heps Hwf _ Htrim Hufa p q w Hp Hq.
+    destruct (le_gt_dec (enfa_dra_prime_between m p w q) 1) as
+      [Hle | Hgt].
+    - exact Hle.
+    - exfalso.
+      assert (Htwo : 2 <= enfa_dra_prime_between m p w q) by lia.
+      unfold enfa_dra_prime_between in Htwo.
+      pose proof
+        (started_traces_from_start_NoDup m p w Hwf Hp) as Hnodup_started.
+      destruct
+        (NoDup_filter_ge_two
+           (fun st => ends_inb m q st && epsilon_simpleb m st)
+           (started_traces_from_start m p w)
+           Hnodup_started Htwo)
+        as [[p1 t1] [[p2 t2]
+             [Hin1 [Hin2 [Hneq [Hfilt1 Hfilt2]]]]]].
+      unfold started_traces_from_start in Hin1.
+      apply in_map_iff in Hin1 as [t1' [Hpair1 Ht1]].
+      inversion Hpair1; subst p1 t1'; clear Hpair1.
+      unfold started_traces_from_start in Hin2.
+      apply in_map_iff in Hin2 as [t2' [Hpair2 Ht2]].
+      inversion Hpair2; subst p2 t2'; clear Hpair2.
+      assert (Htneq : t1 <> t2).
+      {
+        intro Ht.
+        apply Hneq.
+        now subst t2.
+      }
+      apply andb_true_iff in Hfilt1 as [Hend1 _].
+      apply andb_true_iff in Hfilt2 as [Hend2 _].
+      unfold ends_inb in Hend1, Hend2.
+      apply fenfa_state_eqb_sound in Hend1.
+      apply fenfa_state_eqb_sound in Hend2.
+      unfold started_end in Hend1, Hend2.
+      simpl in Hend1, Hend2.
+      destruct (Htrim p Hp) as [[prefix Hreach_p] _].
+      unfold enfa_dra_prime_at in Hreach_p.
+      destruct
+        (length_filter_pos_In
+           (fun st => ends_inb m p st && epsilon_simpleb m st)
+           (started_traces m prefix)
+           Hreach_p)
+        as [[s0 t0] [Hprefix_in Hprefix_filt]].
+      apply andb_true_iff in Hprefix_filt as [Hprefix_end _].
+      unfold ends_inb in Hprefix_end.
+      apply fenfa_state_eqb_sound in Hprefix_end.
+      unfold started_end in Hprefix_end.
+      simpl in Hprefix_end.
+      destruct (Htrim q Hq) as [_ [suffix [[sq u] [Hsq [Hu_map [Hacc _]]]]]].
+      simpl in Hsq. subst sq.
+      apply in_map_iff in Hu_map as [u' [Hu_eq Hu]].
+      inversion Hu_eq; subst u'; clear Hu_eq.
+      set (f := trace_end q u).
+      assert (Hfinal_f : enfa_final (fenfa_base m) f = true).
+      {
+        unfold accepted_traceb in Hacc.
+        simpl in Hacc. exact Hacc.
+      }
+      assert (Hstate_f : In f (fenfa_states m)).
+      {
+        unfold f.
+        destruct (traces_from_fuel_valid m _ q suffix u Hu) as [Hvalid_u _].
+        eapply finite_enfa_wf_valid_trace_end_in_states; eauto.
+      }
+      assert (Hfinals_f : In f (enfa_final_states m)).
+      {
+        unfold enfa_final_states.
+        apply filter_In. split; auto.
+      }
+      assert (Hmid1_in :
+        In (s0, t0 ++ t1) (started_traces m (prefix ++ w))).
+      {
+        eapply started_trace_append_suffix_in
+          with (q := p) (u := t1) (f := q); eauto.
+      }
+      assert (Hmid2_in :
+        In (s0, t0 ++ t2) (started_traces m (prefix ++ w))).
+      {
+        eapply started_trace_append_suffix_in
+          with (q := p) (u := t2) (f := q); eauto.
+      }
+      assert (Hmid1_end : trace_end s0 (t0 ++ t1) = q).
+      {
+        rewrite trace_end_app.
+        now rewrite Hprefix_end, Hend1.
+      }
+      assert (Hmid2_end : trace_end s0 (t0 ++ t2) = q).
+      {
+        rewrite trace_end_app.
+        now rewrite Hprefix_end, Hend2.
+      }
+      pose (st1' := (s0, (t0 ++ t1) ++ u) : started_trace m).
+      pose (st2' := (s0, (t0 ++ t2) ++ u) : started_trace m).
+      assert (Hin1' :
+        In st1' (started_traces m ((prefix ++ w) ++ suffix))).
+      {
+        unfold st1'.
+        eapply started_trace_append_suffix_in
+          with (q := q) (u := u) (f := f); eauto.
+      }
+      assert (Hin2' :
+        In st2' (started_traces m ((prefix ++ w) ++ suffix))).
+      {
+        unfold st2'.
+        eapply started_trace_append_suffix_in
+          with (q := q) (u := u) (f := f); eauto.
+      }
+      assert (Hfilt1' :
+        ((ends_inb m f st1' && epsilon_simpleb m st1') &&
+         enfa_accepting_maximal_epsilon_simpleb m st1') = true).
+      {
+        apply andb_true_iff. split.
+        - apply andb_true_iff. split.
+          + unfold st1', ends_inb, started_end, f.
+            simpl. rewrite trace_end_app.
+            rewrite Hmid1_end.
+            apply fenfa_state_eqb_complete. reflexivity.
+          + eapply epsilon_simpleb_epsilon_free; eauto.
+        - now apply enfa_accepting_maximal_epsilon_simpleb_epsilon_free.
+      }
+      assert (Hfilt2' :
+        ((ends_inb m f st2' && epsilon_simpleb m st2') &&
+         enfa_accepting_maximal_epsilon_simpleb m st2') = true).
+      {
+        apply andb_true_iff. split.
+        - apply andb_true_iff. split.
+          + unfold st2', ends_inb, started_end, f.
+            simpl. rewrite trace_end_app.
+            rewrite Hmid2_end.
+            apply fenfa_state_eqb_complete. reflexivity.
+          + eapply epsilon_simpleb_epsilon_free; eauto.
+        - now apply enfa_accepting_maximal_epsilon_simpleb_epsilon_free.
+      }
+      assert (Hneq' : st1' <> st2').
+      {
+        unfold st1', st2'. intro Heq.
+        injection Heq as Ht.
+        apply app_inv_tail in Ht.
+        apply app_inv_head in Ht.
+        now apply Htneq.
+      }
+      assert (Hmax_two :
+        2 <=
+        enfa_accepting_maximal_simple_reach_count
+          m ((prefix ++ w) ++ suffix) f).
+      {
+        unfold enfa_accepting_maximal_simple_reach_count.
+        eapply two_distinct_in_filter_length
+          with (x := st1') (y := st2'); eauto.
+      }
+      pose proof (sum_map_In_le
+        (enfa_accepting_maximal_simple_reach_count
+           m ((prefix ++ w) ++ suffix))
+        (enfa_final_states m) f Hfinals_f) as Hmax_le_da.
+      pose proof (Hufa ((prefix ++ w) ++ suffix)) as Hufa_suffix.
       unfold enfa_da_prime_word in Hufa_suffix.
       lia.
   Qed.

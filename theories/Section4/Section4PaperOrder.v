@@ -66,7 +66,7 @@ Section Section4PaperOrder.
   Definition paper_lemma1_leaf_original_coincides_prime :=
     @section4_lemma1_leaf A.
 
-  (** Definition 6: UFAs, ReachUFAs, SUFAs, and LeafUFAs. *)
+  (** Definition 6: UFAs, ReachUFAs, SUFAs, stUFAs, and LeafUFAs. *)
 
   (* Definition 6 I *)
   Definition paper_definition6_I_UFA := @enfa_UFA A.
@@ -76,6 +76,14 @@ Section Section4PaperOrder.
 
   (* Definition 6 II *)
   Definition paper_definition6_II_SUFA := @enfa_SUFA A.
+
+  Definition paper_definition6_stUFA := @enfa_stUFA A.
+
+  Definition paper_definition6_stUFA_single_start_implies_reachufa :=
+    @enfa_stUFA_single_start_implies_reachufa A.
+
+  Definition paper_definition6_epsilon_free_single_start_stufa_implies_sufa :=
+    @enfa_epsilon_free_single_start_stufa_implies_sufa A.
 
   (* Definition 6 III *)
   Definition paper_definition6_III_LeafUFA := @enfa_LeafUFA A.
@@ -397,6 +405,9 @@ Section Section4PaperOrder.
 
   Definition paper_theorem2_epsilon_free_trim_ufa_implies_reachufa :=
     @section4_theorem2_epsilon_free_trim_ufa_implies_reachufa A.
+
+  Definition paper_theorem2_epsilon_free_trim_ufa_implies_stufa :=
+    @section4_theorem2_epsilon_free_trim_ufa_implies_stufa A.
 
   Definition paper_theorem2_epsilon_free_trim_ufa_implies_sufa :=
     @section4_theorem2_epsilon_free_trim_ufa_implies_sufa A.
