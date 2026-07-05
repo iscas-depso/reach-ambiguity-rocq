@@ -1,11 +1,10 @@
-From Linden Require Import Regex Chars Parameters.
+From Linden Require Import Regex Chars.
 From Warblre Require Import Numeric.
 
 From PositionAutomata.Core Require Import Syntax.
 From PositionAutomata.Automata Require Import PositionAutomaton.
 
 Section LindenBridge.
-  Context {params : LindenParameters}.
 
   Definition linden_regex := regex char_descr.
   Definition linden_positioned_regex := positioned_regex char_descr.

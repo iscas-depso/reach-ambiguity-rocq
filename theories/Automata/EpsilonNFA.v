@@ -388,6 +388,20 @@ Section EpsilonNFA.
     sum_nats
       (map (enfa_maximal_simple_reach_count m w) (fenfa_states m)).
 
+  Definition enfa_rejecting_states (m : finite_enfa)
+      : list (enfa_state (fenfa_base m)) :=
+    filter (fun q => negb (enfa_final (fenfa_base m) q)) (fenfa_states m).
+
+  Definition enfa_accepting_leaf_prime_word
+      (m : finite_enfa) (w : list A) : nat :=
+    sum_nats
+      (map (enfa_maximal_simple_reach_count m w) (enfa_final_states m)).
+
+  Definition enfa_rejecting_leaf_prime_word
+      (m : finite_enfa) (w : list A) : nat :=
+    sum_nats
+      (map (enfa_maximal_simple_reach_count m w) (enfa_rejecting_states m)).
+
   Definition enfa_epsilon_free (m : finite_enfa) : Prop :=
     forall q, enfa_step (fenfa_base m) q None = [].
 
@@ -413,6 +427,69 @@ Section EpsilonNFA.
   (* Definition 6 III. *)
   Definition enfa_LeafUFA (m : finite_enfa) : Prop :=
     forall w, enfa_leaf_prime_word m w <= 1.
+
+  Definition enfa_BiUFA (m : finite_enfa) : Prop :=
+    forall w,
+      enfa_accepting_leaf_prime_word m w +
+      enfa_rejecting_leaf_prime_word m w <= 1.
+
+  Lemma sum_nats_filter_partition :
+    forall {B : Type} (p : B -> bool) (f : B -> nat) xs,
+      sum_nats (map f xs) =
+      sum_nats (map f (filter p xs)) +
+      sum_nats (map f (filter (fun x => negb (p x)) xs)).
+  Proof.
+    intros B p f xs.
+    induction xs as [| x xs IH]; simpl.
+    - reflexivity.
+    - destruct (p x); simpl; rewrite IH; lia.
+  Qed.
+
+  Theorem enfa_leaf_prime_word_accept_reject_partition :
+    forall (m : finite_enfa) w,
+      enfa_leaf_prime_word m w =
+      enfa_accepting_leaf_prime_word m w +
+      enfa_rejecting_leaf_prime_word m w.
+  Proof.
+    intros m w.
+    unfold enfa_leaf_prime_word,
+      enfa_accepting_leaf_prime_word,
+      enfa_rejecting_leaf_prime_word,
+      enfa_final_states,
+      enfa_rejecting_states.
+    apply sum_nats_filter_partition.
+  Qed.
+
+  Theorem enfa_BiUFA_unique_accepting :
+    forall (m : finite_enfa) w,
+      enfa_BiUFA m ->
+      enfa_accepting_leaf_prime_word m w <= 1.
+  Proof.
+    intros m w Hbi.
+    specialize (Hbi w).
+    lia.
+  Qed.
+
+  Theorem enfa_BiUFA_unique_rejecting :
+    forall (m : finite_enfa) w,
+      enfa_BiUFA m ->
+      enfa_rejecting_leaf_prime_word m w <= 1.
+  Proof.
+    intros m w Hbi.
+    specialize (Hbi w).
+    lia.
+  Qed.
+
+  Theorem section4_leafufa_iff_biufa :
+    forall (m : finite_enfa),
+      enfa_LeafUFA m <-> enfa_BiUFA m.
+  Proof.
+    intros m. split; intros H w.
+    - rewrite <- enfa_leaf_prime_word_accept_reject_partition.
+      now apply H.
+    - rewrite enfa_leaf_prime_word_accept_reject_partition.
+      now apply H.
+  Qed.
 
   Definition enfa_accepting_maximal_da_bounded_by_leaf
       (m : finite_enfa) : Prop :=

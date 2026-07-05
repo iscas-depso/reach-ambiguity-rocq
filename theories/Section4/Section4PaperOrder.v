@@ -3,7 +3,7 @@ Import ListNotations.
 
 From PositionAutomata.Core Require Import Syntax.
 From PositionAutomata.Automata Require Import EpsilonNFA.
-From PositionAutomata.Regex Require Import RegexSSS.
+From PositionAutomata.Regex Require Import RegexSSS SigmaBlankIdentity.
 From PositionAutomata.Grammar Require Import RightLinearGrammar.
 From PositionAutomata.Section4 Require Import Section4LR Section4Examples.
 
@@ -79,6 +79,28 @@ Section Section4PaperOrder.
 
   (* Definition 6 III *)
   Definition paper_definition6_III_LeafUFA := @enfa_LeafUFA A.
+
+  Definition paper_definition6_biUFA := @enfa_BiUFA A.
+
+  Definition paper_definition6_biUFA_unique_accepting :=
+    @enfa_BiUFA_unique_accepting A.
+
+  Definition paper_definition6_biUFA_unique_rejecting :=
+    @enfa_BiUFA_unique_rejecting A.
+
+  Definition paper_definition6_leafufa_iff_biufa :=
+    @section4_leafufa_iff_biufa A.
+
+  Definition paper_kleene_h_regex := @h_regex A.
+
+  Definition paper_kleene_h_regex_idempotence :=
+    @h_regex_idempotence A.
+
+  Definition paper_kleene_step_assume_universal :=
+    @paper_kleene_step_assume_universal A.
+
+  Definition paper_kleene_h_sigma_blank_chain :=
+    @paper_kleene_h_sigma_blank_chain A.
 
   (** Example 2: [(a+b)^* a (a+b)^n].
 

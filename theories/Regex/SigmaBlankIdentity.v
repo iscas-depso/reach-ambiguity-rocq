@@ -45,6 +45,143 @@ Section SigmaBlankIdentity.
       (sigma : list A) (blank a : A) : Prop :=
     In a sigma \/ a = blank.
 
+  Definition regex_equiv (r1 r2 : regex A) : Prop :=
+    forall w, matches r1 w <-> matches r2 w.
+
+  Theorem regex_equiv_refl :
+    forall r, regex_equiv r r.
+  Proof.
+    intros r w. reflexivity.
+  Qed.
+
+  Theorem regex_equiv_sym :
+    forall r1 r2,
+      regex_equiv r1 r2 ->
+      regex_equiv r2 r1.
+  Proof.
+    intros r1 r2 H w.
+    specialize (H w).
+    tauto.
+  Qed.
+
+  Theorem regex_equiv_trans :
+    forall r1 r2 r3,
+      regex_equiv r1 r2 ->
+      regex_equiv r2 r3 ->
+      regex_equiv r1 r3.
+  Proof.
+    intros r1 r2 r3 H12 H23 w.
+    specialize (H12 w).
+    specialize (H23 w).
+    tauto.
+  Qed.
+
+  Theorem regex_equiv_alt :
+    forall r1 r1' r2 r2',
+      regex_equiv r1 r1' ->
+      regex_equiv r2 r2' ->
+      regex_equiv (Alt r1 r2) (Alt r1' r2').
+  Proof.
+    intros r1 r1' r2 r2' H1 H2 w. split; intros Hmatch.
+    - inversion Hmatch; subst.
+      + apply M_AltL. now apply H1.
+      + apply M_AltR. now apply H2.
+    - inversion Hmatch; subst.
+      + apply M_AltL. now apply H1.
+      + apply M_AltR. now apply H2.
+  Qed.
+
+  Theorem regex_equiv_cat :
+    forall r1 r1' r2 r2',
+      regex_equiv r1 r1' ->
+      regex_equiv r2 r2' ->
+      regex_equiv (Cat r1 r2) (Cat r1' r2').
+  Proof.
+    intros r1 r1' r2 r2' H1 H2 w. split; intros Hmatch.
+    - inversion Hmatch; subst.
+      apply M_Cat.
+      + now apply H1.
+      + now apply H2.
+    - inversion Hmatch; subst.
+      apply M_Cat.
+      + now apply H1.
+      + now apply H2.
+  Qed.
+
+  Lemma regex_equiv_star_forward :
+    forall r1 r2 w,
+      regex_equiv r1 r2 ->
+      matches (Star r1) w ->
+      matches (Star r2) w.
+  Proof.
+    intros r1 r2 w Hequiv Hmatch.
+    remember (Star r1) as rstar eqn:Hrstar.
+    induction Hmatch; inversion Hrstar; subst.
+    - apply M_Star0.
+    - eapply M_StarApp.
+      + now apply Hequiv.
+      + exact H.
+      + apply IHHmatch2. reflexivity.
+  Qed.
+
+  Theorem regex_equiv_star :
+    forall r1 r2,
+      regex_equiv r1 r2 ->
+      regex_equiv (Star r1) (Star r2).
+  Proof.
+    intros r1 r2 Hequiv w. split; intros Hmatch.
+    - eapply regex_equiv_star_forward; eauto.
+    - eapply regex_equiv_star_forward.
+      + now apply regex_equiv_sym.
+      + exact Hmatch.
+  Qed.
+
+  Fixpoint repeat_alt_atom (n : nat) (a : A) : regex A :=
+    match n with
+    | O => Empty
+    | S O => Atom a
+    | S n' => Alt (Atom a) (repeat_alt_atom n' a)
+    end.
+
+  Fixpoint h_regex (n : nat) (r : regex A) : regex A :=
+    match r with
+    | Empty => Empty
+    | Eps => Eps
+    | Atom a => repeat_alt_atom n a
+    | Alt r1 r2 => Alt (h_regex n r1) (h_regex n r2)
+    | Cat r1 r2 => Cat (h_regex n r1) (h_regex n r2)
+    | Star r' => Star (h_regex n r')
+    end.
+
+  Theorem repeat_alt_atom_idempotence :
+    forall n a,
+      regex_equiv (repeat_alt_atom (S n) a) (Atom a).
+  Proof.
+    induction n as [| n IH]; intros a w; simpl; split; intros Hmatch.
+    - exact Hmatch.
+    - exact Hmatch.
+    - inversion Hmatch; subst.
+      + match goal with
+        | H : matches (Atom a) _ |- _ => exact H
+        end.
+      + now apply IH.
+    - apply M_AltL. exact Hmatch.
+  Qed.
+
+  Theorem h_regex_idempotence :
+    forall n (r : regex A),
+      regex_equiv (h_regex (S n) r) r.
+  Proof.
+    intros n r.
+    induction r; simpl.
+    - apply regex_equiv_refl.
+    - apply regex_equiv_refl.
+    - apply repeat_alt_atom_idempotence.
+    - now apply regex_equiv_alt.
+    - now apply regex_equiv_cat.
+    - now apply regex_equiv_star.
+  Qed.
+
   Lemma forall_app_intro :
     forall (P : A -> Prop) xs ys,
       Forall P xs ->
@@ -408,6 +545,41 @@ Section SigmaBlankIdentity.
     - intros Hmatch.
       apply sigma_star_blank_star_sigma_star_complete.
       now apply sigma_plus_blank_star_sound.
+  Qed.
+
+  Theorem paper_kleene_step_assume_universal :
+    forall sigma blank (r : regex A),
+      regex_equiv r (sigma_star_regex sigma) ->
+      regex_equiv
+        (Cat (Star (Cat r (Atom blank))) r)
+        (sigma_star_blank_star_sigma_star_regex sigma blank).
+  Proof.
+    intros sigma blank r Hr.
+    unfold sigma_star_blank_star_sigma_star_regex,
+      sigma_star_blank_regex.
+    apply regex_equiv_cat.
+    - apply regex_equiv_star.
+      apply regex_equiv_cat.
+      + exact Hr.
+      + apply regex_equiv_refl.
+    - exact Hr.
+  Qed.
+
+  Theorem paper_kleene_h_sigma_blank_chain :
+    forall sigma blank (r : regex A),
+      regex_equiv r (sigma_star_regex sigma) ->
+      regex_equiv
+        (h_regex
+           (S (length sigma))
+           (Cat (Star (Cat r (Atom blank))) r))
+        (sigma_plus_blank_star_regex sigma blank).
+  Proof.
+    intros sigma blank r Hr.
+    eapply regex_equiv_trans.
+    - apply h_regex_idempotence.
+    - eapply regex_equiv_trans.
+      + now apply paper_kleene_step_assume_universal.
+      + exact (sigma_star_blank_star_sigma_star_equiv sigma blank).
   Qed.
 End SigmaBlankIdentity.
 
