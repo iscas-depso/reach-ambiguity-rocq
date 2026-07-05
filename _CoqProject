@@ -4,6 +4,7 @@ theories/Core/Sets.v
 theories/Core/GraphAlgorithms.v
 theories/Automata/PositionAutomaton.v
 theories/Regex/KleeneSemantics.v
+theories/Regex/SigmaBlankIdentity.v
 theories/Ambiguity/DegreeofAmbiguity.v
 theories/Automata/Equivalence.v
 theories/Automata/PositionCorrectness.v
@@ -14,6 +15,7 @@ theories/Regex/RegexSSS.v
 theories/Grammar/RightLinearGrammar.v
 theories/Section4/Section4LR.v
 theories/Regex/ReachAmbiguityDrance.v
+theories/Regex/Algorithm2Drance.v
 theories/Section4/Section4Examples.v
 theories/Section4/Section4PaperOrder.v
 theories/Demos/PaperExamples.v
