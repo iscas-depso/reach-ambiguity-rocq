@@ -371,6 +371,19 @@ Section EpsilonNFA.
          (fun st => ends_inb m q st && epsilon_simpleb m st)
          (started_traces_from_start m p w)).
 
+  Definition enfa_reach_fiber_maximal
+      (m : finite_enfa)
+      (w : list A)
+      (q : enfa_state (fenfa_base m))
+      (st : started_trace m) : Prop :=
+    forall st' u,
+      st' = (fst st, snd st ++ u) ->
+      In st' (started_traces m w) ->
+      ends_inb m q st' = true ->
+      epsilon_simpleb m st' = true ->
+      trace_word u = [] ->
+      st' = st.
+
   Definition enfa_maximal_simple_reach_count
       (m : finite_enfa)
       (w : list A)
@@ -1950,6 +1963,39 @@ Section EpsilonNFA.
       eapply IH. exact Htail.
   Qed.
 
+  Lemma epsilon_simpleb_from_no_return_to_seen :
+    forall (m : finite_enfa) seen p u q,
+      In q seen ->
+      valid_trace m p u q ->
+      trace_word u = [] ->
+      epsilon_simpleb_from m seen u = true ->
+      u <> [] ->
+      False.
+  Proof.
+    intros m seen p u.
+    revert seen p.
+    induction u as [| [[p0 l] r] u IH]; intros seen p q Hseen Hvalid
+      Hword Hsimple Hnonempty.
+    - contradiction Hnonempty. reflexivity.
+    - simpl in Hword.
+      destruct l as [a|].
+      + discriminate.
+      + simpl in Hsimple.
+        apply andb_true_iff in Hsimple as [Hfresh Hsimple_tail].
+        inversion Hvalid as [| p' l' r' q' t' Hstep Htail]; subst.
+        destruct u as [| e u'].
+        * inversion Htail; subst.
+          apply negb_true_iff in Hfresh.
+          rewrite (state_inb_In_true m q seen Hseen) in Hfresh.
+          discriminate.
+        * eapply IH with (seen := r :: seen) (p := r) (q := q).
+          -- simpl. auto.
+          -- exact Htail.
+          -- exact Hword.
+          -- exact Hsimple_tail.
+          -- discriminate.
+  Qed.
+
   Lemma enfa_epsilon_trace_extends_fresh_reachable :
     forall (m : finite_enfa) seen0 seen todo p u q,
       (forall x, In x seen0 -> In x seen) ->
@@ -2407,6 +2453,55 @@ Section EpsilonNFA.
     intros m w s t Hin.
     eapply traces_from_fuel_valid.
     now apply started_traces_trace_in.
+  Qed.
+
+  Theorem enfa_dra_prime_at_traces_fiber_maximal :
+    forall (m : finite_enfa) w q st,
+      In st (started_traces m w) ->
+      ends_inb m q st = true ->
+      epsilon_simpleb m st = true ->
+      enfa_reach_fiber_maximal m w q st.
+  Proof.
+    intros m w q [s t] _ Hend _ st' u Hst' Hin' Hend' Hsimple' Hword_u.
+    subst st'.
+    destruct u as [| e u'].
+    - simpl. now rewrite app_nil_r.
+    - exfalso.
+      assert (Hq_seen : In q (epsilon_suffix_states m [s] t)).
+      {
+        unfold ends_inb, started_end in Hend.
+        simpl in Hend.
+        apply fenfa_state_eqb_sound in Hend.
+        subst q.
+        apply trace_end_in_epsilon_suffix_states.
+        simpl. auto.
+      }
+      destruct (started_traces_valid m w s (t ++ e :: u') Hin')
+        as [Hvalid' _].
+      assert (Hend_eq : trace_end s (t ++ e :: u') = q).
+      {
+        unfold ends_inb, started_end in Hend'.
+        simpl in Hend'.
+        now apply fenfa_state_eqb_sound in Hend'.
+      }
+      assert (Hvalid_u :
+        valid_trace m (trace_end s t) (e :: u') q).
+      {
+        pose proof
+          (valid_trace_app_inv_suffix
+             m s t (e :: u') (trace_end s (t ++ e :: u')) Hvalid')
+          as Hsuffix.
+        now rewrite Hend_eq in Hsuffix.
+      }
+      assert (Hsimple_u :
+        epsilon_simpleb_from m (epsilon_suffix_states m [s] t) (e :: u') =
+        true).
+      {
+        unfold epsilon_simpleb in Hsimple'.
+        eapply epsilon_simpleb_from_app_true. exact Hsimple'.
+      }
+      eapply epsilon_simpleb_from_no_return_to_seen; eauto.
+      discriminate.
   Qed.
 
   Lemma started_traces_length_bound :

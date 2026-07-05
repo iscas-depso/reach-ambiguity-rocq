@@ -50,6 +50,9 @@ Section Section4PaperOrder.
   (* Definition 5 II.ii *)
   Definition paper_definition5_II_ii_dra_prime := @enfa_dra_prime_at A.
 
+  Definition paper_definition5_II_ii_maximal_condition_removed :=
+    @enfa_dra_prime_at_traces_fiber_maximal A.
+
   (* Definition 5 II.iii *)
   Definition paper_definition5_II_iii_leaf_prime := @enfa_leaf_prime_word A.
 
