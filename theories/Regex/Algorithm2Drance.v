@@ -497,6 +497,42 @@ Section Algorithm2PaperLayer.
       (algorithm2_msss_drance_pref_againstb count_m reject_m k)
       (algorithm2_search_space (fenfa_alphabet count_m) fuel w).
 
+  Fixpoint algorithm2_first_some {B : Type} (xs : list (option B))
+      : option B :=
+    match xs with
+    | [] => None
+    | Some x :: _ => Some x
+    | None :: xs' => algorithm2_first_some xs'
+    end.
+
+  Fixpoint algorithm2_search_pref_dfs
+      (count_m reject_m : @finite_enfa A)
+      (k fuel : nat)
+      (_X : list (enfa_state (fenfa_base reject_m)))
+      (w : list A)
+      (_leaf : nat)
+      (leaf_sup : nat) {struct fuel} : option (list A) :=
+    if algorithm2_msss_rejectedb reject_m w then
+      if k <=? leaf_sup then Some w
+      else
+        match fuel with
+        | O => None
+        | S fuel' =>
+            algorithm2_first_some
+              (map
+                 (fun a =>
+                    let wa := w ++ [a] in
+                    let Y := algorithm2_reach_set reject_m wa in
+                    let leaf' := algorithm2_msss_leaf count_m wa in
+                    let leaf_sup' := Nat.max leaf_sup leaf' in
+                    if algorithm2_msss_rejectedb reject_m wa then
+                      algorithm2_search_pref_dfs
+                        count_m reject_m k fuel' Y wa leaf' leaf_sup'
+                    else None)
+                 (fenfa_alphabet count_m))
+        end
+    else None.
+
   Definition algorithm2_search_msss_drance_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : option (list A) :=
@@ -519,6 +555,16 @@ Section Algorithm2PaperLayer.
       []
       (algorithm2_msss_leaf count_m []).
 
+  Definition algorithm2_search_msss_drance_pref_against_dfs
+      (count_m reject_m : @finite_enfa A)
+      (k : nat) : option (list A) :=
+    algorithm2_search_pref_dfs
+      count_m reject_m k k
+      (algorithm2_reach_set reject_m [])
+      []
+      (algorithm2_msss_leaf count_m [])
+      (algorithm2_msss_leaf count_m []).
+
   Definition algorithm2_decide_msss_drance_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : bool :=
@@ -535,6 +581,14 @@ Section Algorithm2PaperLayer.
       (count_m reject_m : @finite_enfa A)
       (k : nat) : bool :=
     match algorithm2_search_msss_drance_pref_against count_m reject_m k with
+    | Some _ => true
+    | None => false
+    end.
+
+  Definition algorithm2_decide_msss_drance_pref_against_dfs
+      (count_m reject_m : @finite_enfa A)
+      (k : nat) : bool :=
+    match algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k with
     | Some _ => true
     | None => false
     end.
@@ -568,6 +622,28 @@ Section Algorithm2PaperLayer.
          alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
       k.
 
+  Definition algorithm2_search_regex_drance_pref_dfs
+      (alphabet : list A)
+      (label_matches : A -> A -> bool)
+      (count_r reject_r : regex A)
+      (k : nat) : option (list A) :=
+    algorithm2_search_msss_drance_pref_against_dfs
+      (algorithm2_msss_machine alphabet label_matches count_r)
+      (algorithm2_msss_machine
+         alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
+      k.
+
+  Definition algorithm2_decide_regex_msss_drance_pref_dfs
+      (alphabet : list A)
+      (label_matches : A -> A -> bool)
+      (count_r reject_r : regex A)
+      (k : nat) : bool :=
+    algorithm2_decide_msss_drance_pref_against_dfs
+      (algorithm2_msss_machine alphabet label_matches count_r)
+      (algorithm2_msss_machine
+         alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
+      k.
+
   Lemma algorithm2_word_over_app :
     forall alphabet (u v : list A),
       word_over alphabet u ->
@@ -577,6 +653,111 @@ Section Algorithm2PaperLayer.
     intros alphabet u v Hu Hv.
     unfold word_over in *.
     now apply Forall_app.
+  Qed.
+
+  Lemma algorithm2_word_over_snoc :
+    forall alphabet (w : list A) a,
+      word_over alphabet w ->
+      In a alphabet ->
+      word_over alphabet (w ++ [a]).
+  Proof.
+    intros alphabet w a Hw Ha.
+    apply algorithm2_word_over_app; auto.
+    constructor; auto.
+  Qed.
+
+  Lemma algorithm2_first_some_sound :
+    forall (B : Type) (xs : list (option B)) x,
+      algorithm2_first_some xs = Some x ->
+      In (Some x) xs.
+  Proof.
+    intros B xs.
+    induction xs as [| [y |] xs IH]; intros x H; simpl in H; try discriminate.
+    - inversion H; subst. simpl. auto.
+    - simpl. right. now apply IH.
+  Qed.
+
+  Lemma algorithm2_first_some_complete :
+    forall (B : Type) (xs : list (option B)) x,
+      In (Some x) xs ->
+      exists y, algorithm2_first_some xs = Some y.
+  Proof.
+    intros B xs.
+    induction xs as [| [y |] xs IH]; intros x Hin; simpl in Hin; try contradiction.
+    - exists y. reflexivity.
+    - destruct Hin as [Hhead | Hin].
+      + discriminate.
+      + now apply IH with (x := x).
+  Qed.
+
+  Lemma algorithm2_prefixes_snoc :
+    forall (w : list A) a,
+      prefixes (w ++ [a]) = prefixes w ++ [w ++ [a]].
+  Proof.
+    induction w as [| b w IH]; intros a; simpl.
+    - reflexivity.
+    - rewrite IH, map_app. reflexivity.
+  Qed.
+
+  Lemma algorithm2_max_nats_app_single :
+    forall xs n,
+      max_nats (xs ++ [n]) = Nat.max (max_nats xs) n.
+  Proof.
+    induction xs as [| x xs IH]; intros n; simpl.
+    - apply Nat.max_comm.
+    - rewrite IH, Nat.max_assoc. reflexivity.
+  Qed.
+
+  Lemma algorithm2_leaf_prefix_max_snoc :
+    forall (count_m : @finite_enfa A) w a,
+      algorithm2_msss_leaf_prefix_max count_m (w ++ [a]) =
+      Nat.max
+        (algorithm2_msss_leaf_prefix_max count_m w)
+        (algorithm2_msss_leaf count_m (w ++ [a])).
+  Proof.
+    intros count_m w a.
+    unfold algorithm2_msss_leaf_prefix_max.
+    rewrite algorithm2_prefixes_snoc, map_app.
+    simpl. apply algorithm2_max_nats_app_single.
+  Qed.
+
+  Lemma algorithm2_msss_prefix_rejected_prefix :
+    forall (m : @finite_enfa A) u w,
+      prefix_of u w ->
+      algorithm2_msss_prefix_rejected m w ->
+      algorithm2_msss_prefix_rejected m u.
+  Proof.
+    intros m u w Hprefix Hreject v Hv.
+    apply Hreject.
+    apply prefixes_complete.
+    destruct Hprefix as [suffix Hw].
+    pose proof (prefixes_sound u v Hv) as [middle Hu].
+    subst u w.
+    exists (middle ++ suffix).
+    now rewrite app_assoc.
+  Qed.
+
+  Lemma algorithm2_msss_prefix_rejected_snoc :
+    forall (m : @finite_enfa A) w a,
+      algorithm2_msss_prefix_rejected m w ->
+      algorithm2_msss_rejected m (w ++ [a]) ->
+      algorithm2_msss_prefix_rejected m (w ++ [a]).
+  Proof.
+    intros m w a Hprefix Hlast u Hu.
+    rewrite algorithm2_prefixes_snoc in Hu.
+    apply in_app_or in Hu as [Hu | Hu].
+    - now apply Hprefix.
+    - destruct Hu as [Hu | []]. now subst u.
+  Qed.
+
+  Lemma algorithm2_msss_prefix_rejected_nil :
+    forall (m : @finite_enfa A),
+      algorithm2_msss_rejected m [] ->
+      algorithm2_msss_prefix_rejected m [].
+  Proof.
+    intros m Hreject u Hu.
+    simpl in Hu. destruct Hu as [Hu | []].
+    now subst u.
   Qed.
 
   Lemma algorithm2_search_space_sound :
@@ -782,6 +963,256 @@ Section Algorithm2PaperLayer.
       now apply algorithm2_msss_drance_pref_againstb_correct.
   Qed.
 
+  Theorem algorithm2_search_pref_dfs_sound :
+    forall (count_m reject_m : @finite_enfa A) k fuel X w leaf leaf_sup v,
+      word_over (fenfa_alphabet count_m) w ->
+      length w + fuel <= k ->
+      algorithm2_msss_prefix_rejected reject_m w ->
+      leaf_sup = algorithm2_msss_leaf_prefix_max count_m w ->
+      algorithm2_search_pref_dfs
+        count_m reject_m k fuel X w leaf leaf_sup = Some v ->
+      algorithm2_msss_drance_pref_against count_m reject_m k v.
+  Proof.
+    intros count_m reject_m k fuel.
+    induction fuel as [| fuel IH];
+      intros X w leaf leaf_sup v Hover Hlen Hprefix Hleafsup Hsearch;
+      simpl in Hsearch.
+    - destruct (algorithm2_msss_rejectedb reject_m w) eqn:Hreject;
+        try discriminate.
+      destruct (k <=? leaf_sup) eqn:Hleaf; inversion Hsearch; subst v.
+      apply Nat.leb_le in Hleaf.
+      repeat split; auto; try lia.
+    - destruct (algorithm2_msss_rejectedb reject_m w) eqn:Hreject;
+        try discriminate.
+      destruct (k <=? leaf_sup) eqn:Hleaf.
+      + inversion Hsearch; subst v.
+        apply Nat.leb_le in Hleaf.
+        repeat split; auto; try lia.
+      + apply algorithm2_first_some_sound in Hsearch as Hin.
+        apply in_map_iff in Hin as [a [Hchild Ha]].
+        destruct
+          (algorithm2_msss_rejectedb reject_m (w ++ [a]))
+          eqn:Hchild_reject; try discriminate.
+        eapply
+          (IH
+             (algorithm2_reach_set reject_m (w ++ [a]))
+             (w ++ [a])
+             (algorithm2_msss_leaf count_m (w ++ [a]))
+             (Nat.max leaf_sup
+                (algorithm2_msss_leaf count_m (w ++ [a])))).
+        * eapply algorithm2_word_over_snoc; eauto.
+        * rewrite length_app. simpl. lia.
+        * apply algorithm2_msss_prefix_rejected_snoc; auto.
+          now apply algorithm2_msss_rejectedb_correct.
+        * rewrite Hleafsup. symmetry.
+          apply algorithm2_leaf_prefix_max_snoc.
+        * exact Hchild.
+  Qed.
+
+  Theorem algorithm2_search_msss_drance_pref_against_dfs_sound :
+    forall (count_m reject_m : @finite_enfa A) k w,
+      algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+        Some w ->
+      algorithm2_msss_drance_pref_against count_m reject_m k w.
+  Proof.
+    intros count_m reject_m k w Hsearch.
+    unfold algorithm2_search_msss_drance_pref_against_dfs in Hsearch.
+    destruct (algorithm2_msss_rejectedb reject_m []) eqn:Hreject.
+    - apply
+        (algorithm2_search_pref_dfs_sound
+           count_m reject_m k k
+           (algorithm2_reach_set reject_m [])
+           []
+           (algorithm2_msss_leaf count_m [])
+           (algorithm2_msss_leaf count_m [])
+           w).
+      + constructor.
+      + simpl. lia.
+      + apply algorithm2_msss_prefix_rejected_nil.
+        now apply algorithm2_msss_rejectedb_correct.
+      + unfold algorithm2_msss_leaf_prefix_max.
+        simpl. now rewrite Nat.max_0_r.
+      + exact Hsearch.
+    - destruct k as [| k']; simpl in Hsearch;
+        rewrite Hreject in Hsearch; discriminate.
+  Qed.
+
+  Theorem algorithm2_search_pref_dfs_complete :
+    forall (count_m reject_m : @finite_enfa A) k fuel X w leaf leaf_sup suffix,
+      word_over (fenfa_alphabet count_m) w ->
+      length w + fuel <= k ->
+      algorithm2_msss_prefix_rejected reject_m w ->
+      leaf_sup = algorithm2_msss_leaf_prefix_max count_m w ->
+      length suffix <= fuel ->
+      word_over (fenfa_alphabet count_m) suffix ->
+      algorithm2_msss_drance_pref_against
+        count_m reject_m k (w ++ suffix) ->
+      exists v,
+        algorithm2_search_pref_dfs
+          count_m reject_m k fuel X w leaf leaf_sup = Some v /\
+        algorithm2_msss_drance_pref_against count_m reject_m k v.
+  Proof.
+    intros count_m reject_m k fuel.
+    induction fuel as [| fuel IH];
+      intros X w leaf leaf_sup suffix Hover Hlen Hprefix Hleafsup
+        Hsuffix_len Hsuffix_over Hwit.
+    - assert (Hreject_w : algorithm2_msss_rejected reject_m w).
+      { apply Hprefix. apply prefixes_refl. }
+      assert (Hrejectb_w :
+        algorithm2_msss_rejectedb reject_m w = true).
+      { now apply algorithm2_msss_rejectedb_correct. }
+      simpl. rewrite Hrejectb_w.
+      destruct (k <=? leaf_sup) eqn:Hleaf.
+      + exists w. split; [reflexivity |].
+        apply Nat.leb_le in Hleaf.
+        repeat split; auto; try lia.
+      + apply Nat.leb_gt in Hleaf.
+        destruct suffix as [| a suffix]; simpl in Hsuffix_len; try lia.
+        simpl in Hwit.
+        rewrite app_nil_r in Hwit.
+        destruct Hwit as [_ [_ [_ Htarget_leaf]]].
+        rewrite <- Hleafsup in Htarget_leaf. lia.
+    - assert (Hreject_w : algorithm2_msss_rejected reject_m w).
+      { apply Hprefix. apply prefixes_refl. }
+      assert (Hrejectb_w :
+        algorithm2_msss_rejectedb reject_m w = true).
+      { now apply algorithm2_msss_rejectedb_correct. }
+      simpl. rewrite Hrejectb_w.
+      destruct (k <=? leaf_sup) eqn:Hleaf.
+      + exists w. split; [reflexivity |].
+        apply Nat.leb_le in Hleaf.
+        repeat split; auto; try lia.
+      + destruct suffix as [| a suffix].
+        * apply Nat.leb_gt in Hleaf.
+          simpl in Hwit. rewrite app_nil_r in Hwit.
+          destruct Hwit as [_ [_ [_ Htarget_leaf]]].
+          rewrite <- Hleafsup in Htarget_leaf. lia.
+        * inversion Hsuffix_over as [| a0 suffix0 Ha Hsuffix_over'];
+            subst a0 suffix0.
+          assert (Hchild_prefix :
+            algorithm2_msss_prefix_rejected reject_m (w ++ [a])).
+          {
+            eapply algorithm2_msss_prefix_rejected_prefix.
+            - exists suffix. rewrite <- app_assoc. reflexivity.
+            - exact (proj1 (proj2 (proj2 Hwit))).
+          }
+          assert (Hchild_reject :
+            algorithm2_msss_rejectedb reject_m (w ++ [a]) = true).
+          {
+            apply algorithm2_msss_rejectedb_correct.
+            apply Hchild_prefix. apply prefixes_refl.
+          }
+          assert (Hchild_leafsup :
+            Nat.max leaf_sup (algorithm2_msss_leaf count_m (w ++ [a])) =
+            algorithm2_msss_leaf_prefix_max count_m (w ++ [a])).
+          {
+            rewrite Hleafsup. symmetry.
+            apply algorithm2_leaf_prefix_max_snoc.
+          }
+          assert (Hchild_len :
+            length (w ++ [a]) + fuel <= k).
+          { rewrite length_app. simpl. lia. }
+          assert (Hchild_wit :
+            algorithm2_msss_drance_pref_against
+              count_m reject_m k ((w ++ [a]) ++ suffix)).
+          {
+            replace ((w ++ [a]) ++ suffix) with (w ++ a :: suffix)
+              by (rewrite <- app_assoc; reflexivity).
+            exact Hwit.
+          }
+          destruct
+            (IH
+               (algorithm2_reach_set reject_m (w ++ [a]))
+               (w ++ [a])
+               (algorithm2_msss_leaf count_m (w ++ [a]))
+               (Nat.max leaf_sup
+                  (algorithm2_msss_leaf count_m (w ++ [a])))
+               suffix)
+            as [v [Hchild_search Hchild_result]].
+          -- now apply algorithm2_word_over_snoc.
+          -- exact Hchild_len.
+          -- exact Hchild_prefix.
+          -- exact Hchild_leafsup.
+          -- simpl in Hsuffix_len. lia.
+          -- exact Hsuffix_over'.
+          -- exact Hchild_wit.
+          -- assert (Hin_child :
+               In (Some v)
+                 (map
+                    (fun a0 =>
+                       let wa := w ++ [a0] in
+                       let Y := algorithm2_reach_set reject_m wa in
+                       let leaf' := algorithm2_msss_leaf count_m wa in
+                       let leaf_sup' := Nat.max leaf_sup leaf' in
+                       if algorithm2_msss_rejectedb reject_m wa then
+                         algorithm2_search_pref_dfs
+                           count_m reject_m k fuel Y wa leaf' leaf_sup'
+                       else None)
+                    (fenfa_alphabet count_m))).
+             {
+               apply in_map_iff. exists a. split.
+               - simpl. rewrite Hchild_reject. exact Hchild_search.
+               - exact Ha.
+             }
+             destruct
+               (algorithm2_first_some_complete
+                  _ _ _ Hin_child) as [v' Hfirst].
+             exists v'. split.
+             ++ exact Hfirst.
+             ++ apply
+                  (algorithm2_search_pref_dfs_sound
+                     count_m reject_m k (S fuel) X w leaf leaf_sup v');
+                  auto.
+                simpl. rewrite Hrejectb_w, Hleaf. exact Hfirst.
+  Qed.
+
+  Theorem algorithm2_search_msss_drance_pref_against_dfs_complete :
+    forall (count_m reject_m : @finite_enfa A) k,
+      algorithm2_msss_has_drance_pref_against count_m reject_m k ->
+      exists w,
+        algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+          Some w /\
+        algorithm2_msss_drance_pref_against count_m reject_m k w.
+  Proof.
+    intros count_m reject_m k [w Hwit].
+    destruct Hwit as [Hlen [Hover [Hprefix Hleaf]]].
+    assert (Hreject_nil : algorithm2_msss_rejected reject_m []).
+    {
+      apply Hprefix.
+      apply prefixes_complete.
+      exists w. reflexivity.
+    }
+    unfold algorithm2_search_msss_drance_pref_against_dfs.
+    eapply algorithm2_search_pref_dfs_complete with (suffix := w).
+    - constructor.
+    - simpl. lia.
+    - apply algorithm2_msss_prefix_rejected_nil. exact Hreject_nil.
+    - unfold algorithm2_msss_leaf_prefix_max.
+      simpl. now rewrite Nat.max_0_r.
+    - exact Hlen.
+    - exact Hover.
+    - simpl. repeat split; assumption.
+  Qed.
+
+  Theorem algorithm2_search_pref_dfs_some_iff :
+    forall (count_m reject_m : @finite_enfa A) k,
+      (exists w,
+        algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+          Some w) <->
+      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+  Proof.
+    intros count_m reject_m k. split.
+    - intros [w H].
+      exists w.
+      now apply algorithm2_search_msss_drance_pref_against_dfs_sound in H.
+    - intros Hhas.
+      destruct
+        (algorithm2_search_msss_drance_pref_against_dfs_complete
+           count_m reject_m k Hhas)
+        as [w [H _]].
+      exists w. exact H.
+  Qed.
+
   Theorem algorithm2_search_some_iff :
     forall (count_m reject_m : @finite_enfa A) k,
       (exists w,
@@ -858,6 +1289,44 @@ Section Algorithm2PaperLayer.
              count_m reject_m k Hfalse)
           as [w [Hsome _]].
         rewrite H in Hsome. discriminate.
+  Qed.
+
+  Theorem algorithm2_decide_msss_pref_dfs_correct :
+    forall (count_m reject_m : @finite_enfa A) k,
+      algorithm2_decide_msss_drance_pref_against_dfs count_m reject_m k =
+        true <->
+      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+  Proof.
+    intros count_m reject_m k.
+    unfold algorithm2_decide_msss_drance_pref_against_dfs.
+    destruct
+      (algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k)
+      as [w |] eqn:H.
+    - split; intros _.
+      + exists w. now apply algorithm2_search_msss_drance_pref_against_dfs_sound.
+      + reflexivity.
+    - split; intros Hfalse.
+      + discriminate.
+      + destruct
+          (algorithm2_search_msss_drance_pref_against_dfs_complete
+             count_m reject_m k Hfalse)
+          as [w [Hsome _]].
+        rewrite H in Hsome. discriminate.
+  Qed.
+
+  Theorem algorithm2_decide_regex_msss_drance_pref_correct :
+    forall alphabet label_matches (count_r reject_r : regex A) k,
+      algorithm2_decide_regex_msss_drance_pref_dfs
+        alphabet label_matches count_r reject_r k = true <->
+      algorithm2_msss_has_drance_pref_against
+        (algorithm2_msss_machine alphabet label_matches count_r)
+        (algorithm2_msss_machine
+           alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
+        k.
+  Proof.
+    intros alphabet label_matches count_r reject_r k.
+    unfold algorithm2_decide_regex_msss_drance_pref_dfs.
+    apply algorithm2_decide_msss_pref_dfs_correct.
   Qed.
 
   Theorem algorithm2_msss_positive_da_prime_accepts :
@@ -1028,6 +1497,16 @@ Section Algorithm2DranceExamples.
 
   Example algorithm2_search_drance_pref_independent_reject_solver :
     algorithm2_search_regex_drance_pref
+      [true; false]
+      Bool.eqb
+      drance_ambiguous_a
+      drance_reject_false
+      2 =
+    Some [true].
+  Proof. reflexivity. Qed.
+
+  Example algorithm2_search_drance_pref_independent_reject_dfs_solver :
+    algorithm2_search_regex_drance_pref_dfs
       [true; false]
       Bool.eqb
       drance_ambiguous_a
