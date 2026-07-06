@@ -246,6 +246,81 @@ Section Section4Examples.
     vm_compute. lia.
   Qed.
 
+  Definition epsilon_self_loop_bool_enfa : @finite_enfa bool :=
+    {|
+      fenfa_base :=
+        {|
+          enfa_state := unit;
+          enfa_start := [tt];
+          enfa_final := fun _ => true;
+          enfa_step :=
+            fun _ l =>
+              match l with
+              | None => [tt]
+              | Some _ => []
+              end
+        |};
+      fenfa_states := [tt];
+      fenfa_alphabet := [true; false];
+      fenfa_state_eqb := fun _ _ => true;
+      fenfa_state_eqb_sound := fun x y _ =>
+        match x, y with tt, tt => eq_refl end;
+      fenfa_state_eqb_complete := fun x y _ =>
+        match x, y with tt, tt => eq_refl end
+    |}.
+
+  Example epsilon_self_loop_bool_enfa_wf :
+    finite_enfa_wf epsilon_self_loop_bool_enfa.
+  Proof.
+    constructor; simpl.
+    - repeat constructor; intro H; contradiction.
+    - intros [] Hq. simpl. auto.
+    - intros [] [a|] [] _ Hstep; simpl in *; auto; contradiction.
+    - intros [] a [] _ Hstep. simpl in Hstep. contradiction.
+    - intros [] [a|] _; simpl.
+      + constructor.
+      + constructor; [intro H; contradiction | constructor].
+  Qed.
+
+  Lemma epsilon_self_loop_traces_nonempty :
+    forall fuel b w,
+      traces_from_fuel
+        epsilon_self_loop_bool_enfa fuel tt (b :: w) = [].
+  Proof.
+    induction fuel as [| fuel IH]; intros b w; simpl.
+    - reflexivity.
+    - rewrite (IH b w). reflexivity.
+  Qed.
+
+  Example epsilon_self_loop_bool_leafufa :
+    enfa_LeafUFA epsilon_self_loop_bool_enfa.
+  Proof.
+    intros [| b w].
+    - vm_compute. lia.
+    - unfold enfa_leaf_prime_word,
+        enfa_maximal_simple_reach_count,
+        started_traces.
+      simpl.
+      rewrite epsilon_self_loop_traces_nonempty.
+      simpl. lia.
+  Qed.
+
+  Example epsilon_self_loop_bool_not_epsilon_free :
+    ~ enfa_epsilon_free epsilon_self_loop_bool_enfa.
+  Proof.
+    intro Heps.
+    specialize (Heps tt).
+    simpl in Heps.
+    discriminate.
+  Qed.
+
+  Example epsilon_self_loop_bool_not_dfa_conditions :
+    ~ enfa_DFA_conditions epsilon_self_loop_bool_enfa.
+  Proof.
+    intros [Heps _].
+    exact (epsilon_self_loop_bool_not_epsilon_free Heps).
+  Qed.
+
   (** Example separating reach ambiguity from accepting ambiguity.
       [two_start_join_enfa] reaches one state by two paths for the same prefix,
       without necessarily creating accepting ambiguity. *)
@@ -4087,6 +4162,51 @@ Section Section4Examples.
     pose proof (section4_example2_initial_epsilon_step n) as Hstep.
     rewrite (Heps 0) in Hstep.
     contradiction.
+  Qed.
+
+  Example section4_example2_m0_ufa_reachufa_not_leafufa_not_dfa :
+    finite_enfa_wf (section4_example2_m 0) /\
+    enfa_UFA (section4_example2_m 0) /\
+    enfa_ReachUFA (section4_example2_m 0) /\
+    ~ enfa_LeafUFA (section4_example2_m 0) /\
+    ~ enfa_DFA_conditions (section4_example2_m 0).
+  Proof.
+    split.
+    - apply section4_example2_m_wf.
+    - split.
+      + apply section4_example2_m_ufa.
+      + split.
+        * apply section4_example2_m_reachufa.
+        * split.
+          -- apply section4_example2_m_not_leafufa.
+          -- intro Hdfa.
+             pose proof
+               (section4_dfa_conditions_implies_ufa_reachufa_leafufa
+                  (section4_example2_m 0) Hdfa) as [_ [_ Hleaf]].
+             exact (section4_example2_m_not_leafufa 0 Hleaf).
+  Qed.
+
+  Theorem section4_straightforward_not_conversely :
+    (exists m : @finite_enfa bool,
+      finite_enfa_wf m /\
+      enfa_UFA m /\
+      enfa_ReachUFA m /\
+      ~ enfa_LeafUFA m /\
+      ~ enfa_DFA_conditions m) /\
+    (exists m : @finite_enfa bool,
+      finite_enfa_wf m /\
+      enfa_LeafUFA m /\
+      ~ enfa_DFA_conditions m).
+  Proof.
+    split.
+    - exists (section4_example2_m 0).
+      exact section4_example2_m0_ufa_reachufa_not_leafufa_not_dfa.
+    - exists epsilon_self_loop_bool_enfa.
+      split.
+      + apply epsilon_self_loop_bool_enfa_wf.
+      + split.
+        * apply epsilon_self_loop_bool_leafufa.
+        * apply epsilon_self_loop_bool_not_dfa_conditions.
   Qed.
 
   Example section4_example2_da_prime_attack_count_0 :
