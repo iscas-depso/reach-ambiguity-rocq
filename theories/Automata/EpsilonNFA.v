@@ -443,6 +443,12 @@ Section EpsilonNFA.
       In q (fenfa_states m) ->
       length (enfa_step (fenfa_base m) q (Some a)) <= 1.
 
+  Definition enfa_DFA_conditions (m : finite_enfa) : Prop :=
+    enfa_epsilon_free m /\
+    finite_enfa_wf m /\
+    enfa_single_start m /\
+    enfa_deterministic m.
+
   (* Definition 6 I. *)
   Definition enfa_UFA (m : finite_enfa) : Prop :=
     forall w, enfa_da_prime_word m w <= 1.
@@ -1577,6 +1583,15 @@ Section EpsilonNFA.
     induction xs as [| x xs IH]; simpl.
     - lia.
     - destruct (p x); simpl; lia.
+  Qed.
+
+  Lemma enfa_dra_prime_at_le_started_traces :
+    forall (m : finite_enfa) w q,
+      enfa_dra_prime_at m w q <= length (started_traces m w).
+  Proof.
+    intros m w q.
+    unfold enfa_dra_prime_at.
+    apply filter_length_le.
   Qed.
 
   Definition enfa_unseen_epsilon_transition_count
@@ -4119,6 +4134,38 @@ Section EpsilonNFA.
     intros m Heps Hwf Hsingle Hdet w.
     apply leaf_prime_started_traces_le_one; auto.
     now apply started_traces_epsilon_free_deterministic_single_start_le_one.
+  Qed.
+
+  Theorem section4_dfa_conditions_implies_reachufa :
+    forall (m : finite_enfa),
+      enfa_DFA_conditions m ->
+      enfa_ReachUFA m.
+  Proof.
+    intros m [Heps [Hwf [Hsingle Hdet]]] w q _.
+    pose proof (enfa_dra_prime_at_le_started_traces m w q) as Hfilter.
+    pose proof
+      (started_traces_epsilon_free_deterministic_single_start_le_one
+         m w Hwf Heps Hsingle Hdet) as Hstarted.
+    lia.
+  Qed.
+
+  Theorem section4_dfa_conditions_implies_ufa_reachufa_leafufa :
+    forall (m : finite_enfa),
+      enfa_DFA_conditions m ->
+      enfa_UFA m /\ enfa_ReachUFA m /\ enfa_LeafUFA m.
+  Proof.
+    intros m [Heps [Hwf [Hsingle Hdet]]].
+    assert (Hleaf : enfa_LeafUFA m).
+    {
+      eapply section4_theorem1_epsilon_free_deterministic_leafufa; eauto.
+    }
+    assert (Hreach : enfa_ReachUFA m).
+    {
+      apply section4_dfa_conditions_implies_reachufa.
+      exact (conj Heps (conj Hwf (conj Hsingle Hdet))).
+    }
+    repeat split; auto.
+    now eapply section4_theorem2_leafufa_implies_ufa.
   Qed.
 
   Theorem section4_theorem1_epsilon_free_leafufa_deterministic_trim :

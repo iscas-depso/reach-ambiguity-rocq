@@ -364,6 +364,15 @@ Section Section4PaperOrder.
   Definition paper_theorem1_I_leafufa_iff_deterministic_trim_single_start :=
     @section4_theorem1_epsilon_free_leafufa_deterministic_trim_single_start A.
 
+  (* Straightforward DFA implications and non-converses. *)
+  Definition paper_support_dfa_conditions := @enfa_DFA_conditions A.
+
+  Definition paper_straightforward_dfa_implies_ufa_reachufa_leafufa :=
+    @section4_dfa_conditions_implies_ufa_reachufa_leafufa A.
+
+  Definition paper_straightforward_not_conversely :=
+    section4_straightforward_not_conversely.
+
   (* Theorem 1 II: refined/decomposed epsilon-closure branching direction. *)
   Definition paper_theorem1_II_leafufa_implies_epsilon_closure_branching :=
     @section4_theorem1_leafufa_implies_epsilon_closure_branching A.
