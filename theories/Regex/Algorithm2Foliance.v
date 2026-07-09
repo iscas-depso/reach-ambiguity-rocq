@@ -6,217 +6,217 @@ From PositionAutomata.Ambiguity Require Import
   DegreeofAmbiguity DegreeofInfiniteAmbiguity.
 From PositionAutomata.Automata Require Import EpsilonNFA.
 From PositionAutomata.Regex Require Import
-  RegexSSS ReachAmbiguityDrance.
+  RegexSSS ReachAmbiguityFoliance.
 From PositionAutomata.Grammar Require Import RightLinearGrammar.
 From PositionAutomata.Section4 Require Import Section4LR.
 
 (** Paper-facing executable layer for Algorithm 2.
 
     The paper presents Algorithm 2 as a deterministic exponential-time search
-    for k-drance strings.  This file packages the existing executable solver
-    from [ReachAmbiguityDrance] as that evaluation layer and proves the
+    for k-foliance strings.  This file packages the existing executable solver
+    from [ReachAmbiguityFoliance] as that evaluation layer and proves the
     witness-producing and Boolean decision interfaces correct. *)
 
-Section Algorithm2Drance.
+Section Algorithm2Foliance.
   Context {A : Type}.
 
   Definition algorithm2_witness
       (m : @finite_nfa A)
       (k : nat)
       (w : list A) : Prop :=
-    word_over (fnfa_alphabet m) w /\ k_drance m k w.
+    word_over (fnfa_alphabet m) w /\ k_foliance m k w.
 
-  Definition algorithm2_has_drance
+  Definition algorithm2_has_foliance
       (m : @finite_nfa A)
       (k : nat) : Prop :=
     exists w, algorithm2_witness m k w.
 
-  Definition algorithm2_solve_drance
+  Definition algorithm2_solve_foliance
       (m : @finite_nfa A)
       (k : nat) : option (list A) :=
-    solve_drance m k.
+    solve_foliance m k.
 
-  Definition algorithm2_decide_drance
+  Definition algorithm2_decide_foliance
       (m : @finite_nfa A)
       (k : nat) : bool :=
-    match algorithm2_solve_drance m k with
+    match algorithm2_solve_foliance m k with
     | Some _ => true
     | None => false
     end.
 
-  Definition algorithm2_solve_regex_drance
+  Definition algorithm2_solve_regex_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : option (list A) :=
-    solve_regex_drance alphabet label_matches r k.
+    solve_regex_foliance alphabet label_matches r k.
 
-  Definition algorithm2_decide_regex_drance
+  Definition algorithm2_decide_regex_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : bool :=
-    match algorithm2_solve_regex_drance alphabet label_matches r k with
+    match algorithm2_solve_regex_foliance alphabet label_matches r k with
     | Some _ => true
     | None => false
     end.
 
-  Definition algorithm2_regex_has_drance
+  Definition algorithm2_regex_has_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : Prop :=
-    algorithm2_has_drance
-      (regex_drance_nfa alphabet label_matches r)
+    algorithm2_has_foliance
+      (regex_foliance_nfa alphabet label_matches r)
       k.
 
-  Theorem algorithm2_solve_drance_sound :
+  Theorem algorithm2_solve_foliance_sound :
     forall (m : @finite_nfa A) k w,
-      algorithm2_solve_drance m k = Some w ->
+      algorithm2_solve_foliance m k = Some w ->
       algorithm2_witness m k w.
   Proof.
     intros m k w Hsolve.
-    unfold algorithm2_solve_drance in Hsolve.
-    apply solve_drance_sound in Hsolve as [Hin Hdrance].
+    unfold algorithm2_solve_foliance in Hsolve.
+    apply solve_foliance_sound in Hsolve as [Hin Hfoliance].
     apply candidate_words_sound in Hin as [_ Hover].
     split; assumption.
   Qed.
 
-  Theorem algorithm2_solve_drance_complete :
+  Theorem algorithm2_solve_foliance_complete :
     forall (m : @finite_nfa A) k,
-      algorithm2_has_drance m k ->
+      algorithm2_has_foliance m k ->
       exists w,
-        algorithm2_solve_drance m k = Some w /\
+        algorithm2_solve_foliance m k = Some w /\
         algorithm2_witness m k w.
   Proof.
-    intros m k [w [Hover Hdrance]].
+    intros m k [w [Hover Hfoliance]].
     assert (Hlen : length w <= k).
-    { exact (proj1 Hdrance). }
+    { exact (proj1 Hfoliance). }
     assert (Hin : In w (candidate_words m k)).
     {
       apply candidate_words_complete; assumption.
     }
-    unfold algorithm2_solve_drance.
+    unfold algorithm2_solve_foliance.
     destruct
-      (solve_drance_complete_over_candidates
-         m k (ex_intro _ w (conj Hin Hdrance)))
-      as [w' [Hsolve [Hin' Hdrance']]].
+      (solve_foliance_complete_over_candidates
+         m k (ex_intro _ w (conj Hin Hfoliance)))
+      as [w' [Hsolve [Hin' Hfoliance']]].
     exists w'. split.
     - exact Hsolve.
     - apply candidate_words_sound in Hin' as [_ Hover'].
       split; assumption.
   Qed.
 
-  Theorem algorithm2_solve_drance_some_iff :
+  Theorem algorithm2_solve_foliance_some_iff :
     forall (m : @finite_nfa A) k,
-      (exists w, algorithm2_solve_drance m k = Some w) <->
-      algorithm2_has_drance m k.
+      (exists w, algorithm2_solve_foliance m k = Some w) <->
+      algorithm2_has_foliance m k.
   Proof.
     intros m k. split.
     - intros [w Hsolve].
-      exists w. now apply algorithm2_solve_drance_sound in Hsolve.
+      exists w. now apply algorithm2_solve_foliance_sound in Hsolve.
     - intros Hhas.
-      destruct (algorithm2_solve_drance_complete m k Hhas)
+      destruct (algorithm2_solve_foliance_complete m k Hhas)
         as [w [Hsolve _]].
       exists w. exact Hsolve.
   Qed.
 
-  Theorem algorithm2_decide_drance_correct :
+  Theorem algorithm2_decide_foliance_correct :
     forall (m : @finite_nfa A) k,
-      algorithm2_decide_drance m k = true <->
-      algorithm2_has_drance m k.
+      algorithm2_decide_foliance m k = true <->
+      algorithm2_has_foliance m k.
   Proof.
     intros m k.
-    unfold algorithm2_decide_drance.
-    destruct (algorithm2_solve_drance m k) as [w |] eqn:Hsolve.
+    unfold algorithm2_decide_foliance.
+    destruct (algorithm2_solve_foliance m k) as [w |] eqn:Hsolve.
     - split; intros _.
-      + exists w. now apply algorithm2_solve_drance_sound.
+      + exists w. now apply algorithm2_solve_foliance_sound.
       + reflexivity.
     - split; intros H.
       + discriminate.
-      + destruct (algorithm2_solve_drance_complete m k H)
+      + destruct (algorithm2_solve_foliance_complete m k H)
           as [w [Hsolve' _]].
         rewrite Hsolve in Hsolve'. discriminate.
   Qed.
 
-  Theorem algorithm2_solve_regex_drance_sound :
+  Theorem algorithm2_solve_regex_foliance_sound :
     forall alphabet label_matches (r : regex A) k w,
-      algorithm2_solve_regex_drance alphabet label_matches r k = Some w ->
+      algorithm2_solve_regex_foliance alphabet label_matches r k = Some w ->
       algorithm2_witness
-        (regex_drance_nfa alphabet label_matches r)
+        (regex_foliance_nfa alphabet label_matches r)
         k
         w.
   Proof.
     intros alphabet label_matches r k w Hsolve.
-    unfold algorithm2_solve_regex_drance, solve_regex_drance in Hsolve.
+    unfold algorithm2_solve_regex_foliance, solve_regex_foliance in Hsolve.
     change
-      (algorithm2_solve_drance
-         (regex_drance_nfa alphabet label_matches r) k = Some w)
+      (algorithm2_solve_foliance
+         (regex_foliance_nfa alphabet label_matches r) k = Some w)
       in Hsolve.
-    now apply algorithm2_solve_drance_sound in Hsolve.
+    now apply algorithm2_solve_foliance_sound in Hsolve.
   Qed.
 
-  Theorem algorithm2_solve_regex_drance_complete :
+  Theorem algorithm2_solve_regex_foliance_complete :
     forall alphabet label_matches (r : regex A) k,
-      algorithm2_regex_has_drance alphabet label_matches r k ->
+      algorithm2_regex_has_foliance alphabet label_matches r k ->
       exists w,
-        algorithm2_solve_regex_drance alphabet label_matches r k = Some w /\
+        algorithm2_solve_regex_foliance alphabet label_matches r k = Some w /\
         algorithm2_witness
-          (regex_drance_nfa alphabet label_matches r)
+          (regex_foliance_nfa alphabet label_matches r)
           k
           w.
   Proof.
     intros alphabet label_matches r k Hhas.
-    unfold algorithm2_regex_has_drance in Hhas.
+    unfold algorithm2_regex_has_foliance in Hhas.
     destruct
-      (algorithm2_solve_drance_complete
-         (regex_drance_nfa alphabet label_matches r) k Hhas)
+      (algorithm2_solve_foliance_complete
+         (regex_foliance_nfa alphabet label_matches r) k Hhas)
       as [w [Hsolve Hw]].
     exists w. split.
-    - unfold algorithm2_solve_regex_drance, solve_regex_drance.
+    - unfold algorithm2_solve_regex_foliance, solve_regex_foliance.
       exact Hsolve.
     - exact Hw.
   Qed.
 
-  Theorem algorithm2_solve_regex_drance_some_iff :
+  Theorem algorithm2_solve_regex_foliance_some_iff :
     forall alphabet label_matches (r : regex A) k,
       (exists w,
-        algorithm2_solve_regex_drance alphabet label_matches r k = Some w) <->
-      algorithm2_regex_has_drance alphabet label_matches r k.
+        algorithm2_solve_regex_foliance alphabet label_matches r k = Some w) <->
+      algorithm2_regex_has_foliance alphabet label_matches r k.
   Proof.
     intros alphabet label_matches r k. split.
     - intros [w Hsolve].
-      exists w. now apply algorithm2_solve_regex_drance_sound in Hsolve.
+      exists w. now apply algorithm2_solve_regex_foliance_sound in Hsolve.
     - intros Hhas.
       destruct
-        (algorithm2_solve_regex_drance_complete
+        (algorithm2_solve_regex_foliance_complete
            alphabet label_matches r k Hhas)
         as [w [Hsolve _]].
       exists w. exact Hsolve.
   Qed.
 
-  Theorem algorithm2_decide_regex_drance_correct :
+  Theorem algorithm2_decide_regex_foliance_correct :
     forall alphabet label_matches (r : regex A) k,
-      algorithm2_decide_regex_drance alphabet label_matches r k = true <->
-      algorithm2_regex_has_drance alphabet label_matches r k.
+      algorithm2_decide_regex_foliance alphabet label_matches r k = true <->
+      algorithm2_regex_has_foliance alphabet label_matches r k.
   Proof.
     intros alphabet label_matches r k.
-    unfold algorithm2_decide_regex_drance.
+    unfold algorithm2_decide_regex_foliance.
     destruct
-      (algorithm2_solve_regex_drance alphabet label_matches r k)
+      (algorithm2_solve_regex_foliance alphabet label_matches r k)
       as [w |] eqn:Hsolve.
     - split; intros _.
-      + exists w. now eapply algorithm2_solve_regex_drance_sound.
+      + exists w. now eapply algorithm2_solve_regex_foliance_sound.
       + reflexivity.
     - split; intros H.
       + discriminate.
       + destruct
-          (algorithm2_solve_regex_drance_complete
+          (algorithm2_solve_regex_foliance_complete
              alphabet label_matches r k H)
           as [w [Hsolve' _]].
         rewrite Hsolve in Hsolve'. discriminate.
   Qed.
-End Algorithm2Drance.
+End Algorithm2Foliance.
 
 Section Algorithm2PaperLayer.
   Context {A : Type}.
@@ -296,7 +296,7 @@ Section Algorithm2PaperLayer.
       (m : @finite_enfa A) (w : list A) : bool :=
     forallb (algorithm2_msss_rejectedb m) (prefixes w).
 
-  Definition algorithm2_msss_drance_against
+  Definition algorithm2_msss_foliance_against
       (count_m reject_m : @finite_enfa A)
       (k : nat)
       (w : list A) : Prop :=
@@ -305,11 +305,11 @@ Section Algorithm2PaperLayer.
     algorithm2_msss_rejected reject_m w /\
     k <= algorithm2_msss_leaf_prefix_max count_m w.
 
-  Definition algorithm2_msss_drance
+  Definition algorithm2_msss_foliance
       (m : @finite_enfa A) (k : nat) (w : list A) : Prop :=
-    algorithm2_msss_drance_against m m k w.
+    algorithm2_msss_foliance_against m m k w.
 
-  Definition algorithm2_msss_drance_pref_against
+  Definition algorithm2_msss_foliance_pref_against
       (count_m reject_m : @finite_enfa A)
       (k : nat)
       (w : list A) : Prop :=
@@ -318,7 +318,7 @@ Section Algorithm2PaperLayer.
     algorithm2_msss_prefix_rejected reject_m w /\
     k <= algorithm2_msss_leaf_prefix_max count_m w.
 
-  Definition algorithm2_msss_drance_againstb
+  Definition algorithm2_msss_foliance_againstb
       (count_m reject_m : @finite_enfa A)
       (k : nat)
       (w : list A) : bool :=
@@ -326,11 +326,11 @@ Section Algorithm2PaperLayer.
     && algorithm2_msss_rejectedb reject_m w
     && (k <=? algorithm2_msss_leaf_prefix_max count_m w).
 
-  Definition algorithm2_msss_dranceb
+  Definition algorithm2_msss_folianceb
       (m : @finite_enfa A) (k : nat) (w : list A) : bool :=
-    algorithm2_msss_drance_againstb m m k w.
+    algorithm2_msss_foliance_againstb m m k w.
 
-  Definition algorithm2_msss_drance_pref_againstb
+  Definition algorithm2_msss_foliance_pref_againstb
       (count_m reject_m : @finite_enfa A)
       (k : nat)
       (w : list A) : bool :=
@@ -338,17 +338,17 @@ Section Algorithm2PaperLayer.
     && algorithm2_msss_prefix_rejectedb reject_m w
     && (k <=? algorithm2_msss_leaf_prefix_max count_m w).
 
-  Definition algorithm2_msss_has_drance_against
+  Definition algorithm2_msss_has_foliance_against
       (count_m reject_m : @finite_enfa A) (k : nat) : Prop :=
-    exists w, algorithm2_msss_drance_against count_m reject_m k w.
+    exists w, algorithm2_msss_foliance_against count_m reject_m k w.
 
-  Definition algorithm2_msss_has_drance
+  Definition algorithm2_msss_has_foliance
       (m : @finite_enfa A) (k : nat) : Prop :=
-    algorithm2_msss_has_drance_against m m k.
+    algorithm2_msss_has_foliance_against m m k.
 
-  Definition algorithm2_msss_has_drance_pref_against
+  Definition algorithm2_msss_has_foliance_pref_against
       (count_m reject_m : @finite_enfa A) (k : nat) : Prop :=
-    exists w, algorithm2_msss_drance_pref_against count_m reject_m k w.
+    exists w, algorithm2_msss_foliance_pref_against count_m reject_m k w.
 
   Lemma algorithm2_msss_rejectedb_correct :
     forall (m : @finite_enfa A) w,
@@ -379,15 +379,15 @@ Section Algorithm2PaperLayer.
       now apply H.
   Qed.
 
-  Lemma algorithm2_msss_drance_againstb_correct :
+  Lemma algorithm2_msss_foliance_againstb_correct :
     forall (count_m reject_m : @finite_enfa A) k w,
       word_over (fenfa_alphabet count_m) w ->
-      algorithm2_msss_drance_againstb count_m reject_m k w = true <->
-      algorithm2_msss_drance_against count_m reject_m k w.
+      algorithm2_msss_foliance_againstb count_m reject_m k w = true <->
+      algorithm2_msss_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w Hover.
-    unfold algorithm2_msss_drance_againstb,
-      algorithm2_msss_drance_against.
+    unfold algorithm2_msss_foliance_againstb,
+      algorithm2_msss_foliance_against.
     split; intros H.
     - apply andb_true_iff in H as [Hleft Hleaf].
       apply andb_true_iff in Hleft as [Hlen Hreject].
@@ -403,15 +403,15 @@ Section Algorithm2PaperLayer.
       + now apply Nat.leb_le.
   Qed.
 
-  Lemma algorithm2_msss_drance_pref_againstb_correct :
+  Lemma algorithm2_msss_foliance_pref_againstb_correct :
     forall (count_m reject_m : @finite_enfa A) k w,
       word_over (fenfa_alphabet count_m) w ->
-      algorithm2_msss_drance_pref_againstb count_m reject_m k w = true <->
-      algorithm2_msss_drance_pref_against count_m reject_m k w.
+      algorithm2_msss_foliance_pref_againstb count_m reject_m k w = true <->
+      algorithm2_msss_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w Hover.
-    unfold algorithm2_msss_drance_pref_againstb,
-      algorithm2_msss_drance_pref_against.
+    unfold algorithm2_msss_foliance_pref_againstb,
+      algorithm2_msss_foliance_pref_against.
     split; intros H.
     - apply andb_true_iff in H as [Hleft Hleaf].
       apply andb_true_iff in Hleft as [Hlen Hreject].
@@ -474,7 +474,7 @@ Section Algorithm2PaperLayer.
       (w : list A)
       (_leaf_max : nat) : option (list A) :=
     find
-      (algorithm2_msss_drance_againstb count_m reject_m k)
+      (algorithm2_msss_foliance_againstb count_m reject_m k)
       (algorithm2_search_space (fenfa_alphabet count_m) fuel w).
 
   Definition algorithm2_search_children
@@ -484,7 +484,7 @@ Section Algorithm2PaperLayer.
       (w : list A)
       (_leaf_max : nat) : option (list A) :=
     find
-      (algorithm2_msss_drance_againstb count_m reject_m k)
+      (algorithm2_msss_foliance_againstb count_m reject_m k)
       (algorithm2_search_children_space alphabet fuel w).
 
   Definition algorithm2_search_pref
@@ -494,7 +494,7 @@ Section Algorithm2PaperLayer.
       (w : list A)
       (_leaf_max : nat) : option (list A) :=
     find
-      (algorithm2_msss_drance_pref_againstb count_m reject_m k)
+      (algorithm2_msss_foliance_pref_againstb count_m reject_m k)
       (algorithm2_search_space (fenfa_alphabet count_m) fuel w).
 
   Fixpoint algorithm2_first_some {B : Type} (xs : list (option B))
@@ -533,7 +533,7 @@ Section Algorithm2PaperLayer.
         end
     else None.
 
-  Definition algorithm2_search_msss_drance_against
+  Definition algorithm2_search_msss_foliance_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : option (list A) :=
     algorithm2_search
@@ -542,11 +542,11 @@ Section Algorithm2PaperLayer.
       []
       (algorithm2_msss_leaf count_m []).
 
-  Definition algorithm2_search_msss_drance
+  Definition algorithm2_search_msss_foliance
       (m : @finite_enfa A) (k : nat) : option (list A) :=
-    algorithm2_search_msss_drance_against m m k.
+    algorithm2_search_msss_foliance_against m m k.
 
-  Definition algorithm2_search_msss_drance_pref_against
+  Definition algorithm2_search_msss_foliance_pref_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : option (list A) :=
     algorithm2_search_pref
@@ -555,7 +555,7 @@ Section Algorithm2PaperLayer.
       []
       (algorithm2_msss_leaf count_m []).
 
-  Definition algorithm2_search_msss_drance_pref_against_dfs
+  Definition algorithm2_search_msss_foliance_pref_against_dfs
       (count_m reject_m : @finite_enfa A)
       (k : nat) : option (list A) :=
     algorithm2_search_pref_dfs
@@ -565,80 +565,80 @@ Section Algorithm2PaperLayer.
       (algorithm2_msss_leaf count_m [])
       (algorithm2_msss_leaf count_m []).
 
-  Definition algorithm2_decide_msss_drance_against
+  Definition algorithm2_decide_msss_foliance_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : bool :=
-    match algorithm2_search_msss_drance_against count_m reject_m k with
+    match algorithm2_search_msss_foliance_against count_m reject_m k with
     | Some _ => true
     | None => false
     end.
 
-  Definition algorithm2_decide_msss_drance
+  Definition algorithm2_decide_msss_foliance
       (m : @finite_enfa A) (k : nat) : bool :=
-    algorithm2_decide_msss_drance_against m m k.
+    algorithm2_decide_msss_foliance_against m m k.
 
-  Definition algorithm2_decide_msss_drance_pref_against
+  Definition algorithm2_decide_msss_foliance_pref_against
       (count_m reject_m : @finite_enfa A)
       (k : nat) : bool :=
-    match algorithm2_search_msss_drance_pref_against count_m reject_m k with
+    match algorithm2_search_msss_foliance_pref_against count_m reject_m k with
     | Some _ => true
     | None => false
     end.
 
-  Definition algorithm2_decide_msss_drance_pref_against_dfs
+  Definition algorithm2_decide_msss_foliance_pref_against_dfs
       (count_m reject_m : @finite_enfa A)
       (k : nat) : bool :=
-    match algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k with
+    match algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k with
     | Some _ => true
     | None => false
     end.
 
-  Definition algorithm2_search_regex_drance
+  Definition algorithm2_search_regex_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : option (list A) :=
-    algorithm2_search_msss_drance
+    algorithm2_search_msss_foliance
       (algorithm2_msss_machine alphabet label_matches r)
       k.
 
-  Definition algorithm2_decide_regex_msss_drance
+  Definition algorithm2_decide_regex_msss_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : bool :=
-    algorithm2_decide_msss_drance
+    algorithm2_decide_msss_foliance
       (algorithm2_msss_machine alphabet label_matches r)
       k.
 
-  Definition algorithm2_search_regex_drance_pref
+  Definition algorithm2_search_regex_foliance_pref
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (count_r reject_r : regex A)
       (k : nat) : option (list A) :=
-    algorithm2_search_msss_drance_pref_against
+    algorithm2_search_msss_foliance_pref_against
       (algorithm2_msss_machine alphabet label_matches count_r)
       (algorithm2_msss_machine
          alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
       k.
 
-  Definition algorithm2_search_regex_drance_pref_dfs
+  Definition algorithm2_search_regex_foliance_pref_dfs
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (count_r reject_r : regex A)
       (k : nat) : option (list A) :=
-    algorithm2_search_msss_drance_pref_against_dfs
+    algorithm2_search_msss_foliance_pref_against_dfs
       (algorithm2_msss_machine alphabet label_matches count_r)
       (algorithm2_msss_machine
          alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
       k.
 
-  Definition algorithm2_decide_regex_msss_drance_pref_dfs
+  Definition algorithm2_decide_regex_msss_foliance_pref_dfs
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (count_r reject_r : regex A)
       (k : nat) : bool :=
-    algorithm2_decide_msss_drance_pref_against_dfs
+    algorithm2_decide_msss_foliance_pref_against_dfs
       (algorithm2_msss_machine alphabet label_matches count_r)
       (algorithm2_msss_machine
          alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
@@ -819,7 +819,7 @@ Section Algorithm2PaperLayer.
     forall (count_m reject_m : @finite_enfa A) k fuel X w leaf_max v,
       word_over (fenfa_alphabet count_m) w ->
       algorithm2_search count_m reject_m k fuel X w leaf_max = Some v ->
-      algorithm2_msss_drance_against count_m reject_m k v.
+      algorithm2_msss_foliance_against count_m reject_m k v.
   Proof.
     intros count_m reject_m k fuel X w leaf_max v Hover_w Hsearch.
     unfold algorithm2_search in Hsearch.
@@ -833,14 +833,14 @@ Section Algorithm2PaperLayer.
       subst v.
       now apply algorithm2_word_over_app.
     }
-    now apply algorithm2_msss_drance_againstb_correct.
+    now apply algorithm2_msss_foliance_againstb_correct.
   Qed.
 
   Theorem algorithm2_search_pref_sound :
     forall (count_m reject_m : @finite_enfa A) k fuel X w leaf_max v,
       word_over (fenfa_alphabet count_m) w ->
       algorithm2_search_pref count_m reject_m k fuel X w leaf_max = Some v ->
-      algorithm2_msss_drance_pref_against count_m reject_m k v.
+      algorithm2_msss_foliance_pref_against count_m reject_m k v.
   Proof.
     intros count_m reject_m k fuel X w leaf_max v Hover_w Hsearch.
     unfold algorithm2_search_pref in Hsearch.
@@ -854,41 +854,41 @@ Section Algorithm2PaperLayer.
       subst v.
       now apply algorithm2_word_over_app.
     }
-    now apply algorithm2_msss_drance_pref_againstb_correct.
+    now apply algorithm2_msss_foliance_pref_againstb_correct.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_against_sound :
+  Theorem algorithm2_search_msss_foliance_against_sound :
     forall (count_m reject_m : @finite_enfa A) k w,
-      algorithm2_search_msss_drance_against count_m reject_m k = Some w ->
-      algorithm2_msss_drance_against count_m reject_m k w.
+      algorithm2_search_msss_foliance_against count_m reject_m k = Some w ->
+      algorithm2_msss_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w H.
-    unfold algorithm2_search_msss_drance_against in H.
+    unfold algorithm2_search_msss_foliance_against in H.
     eapply algorithm2_search_sound; eauto.
     constructor.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_pref_against_sound :
+  Theorem algorithm2_search_msss_foliance_pref_against_sound :
     forall (count_m reject_m : @finite_enfa A) k w,
-      algorithm2_search_msss_drance_pref_against count_m reject_m k = Some w ->
-      algorithm2_msss_drance_pref_against count_m reject_m k w.
+      algorithm2_search_msss_foliance_pref_against count_m reject_m k = Some w ->
+      algorithm2_msss_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w H.
-    unfold algorithm2_search_msss_drance_pref_against in H.
+    unfold algorithm2_search_msss_foliance_pref_against in H.
     eapply algorithm2_search_pref_sound; eauto.
     constructor.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_against_complete :
+  Theorem algorithm2_search_msss_foliance_against_complete :
     forall (count_m reject_m : @finite_enfa A) k,
-      algorithm2_msss_has_drance_against count_m reject_m k ->
+      algorithm2_msss_has_foliance_against count_m reject_m k ->
       exists w,
-        algorithm2_search_msss_drance_against count_m reject_m k = Some w /\
-        algorithm2_msss_drance_against count_m reject_m k w.
+        algorithm2_search_msss_foliance_against count_m reject_m k = Some w /\
+        algorithm2_msss_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k [w Hwit].
     destruct Hwit as [Hlen [Hover [Hreject Hleaf]]].
-    unfold algorithm2_search_msss_drance_against, algorithm2_search.
+    unfold algorithm2_search_msss_foliance_against, algorithm2_search.
     assert (Hin :
       In w (algorithm2_search_space (fenfa_alphabet count_m) k [])).
     {
@@ -896,14 +896,14 @@ Section Algorithm2PaperLayer.
       now apply algorithm2_search_space_complete.
     }
     assert (Hpred :
-      algorithm2_msss_drance_againstb count_m reject_m k w = true).
+      algorithm2_msss_foliance_againstb count_m reject_m k w = true).
     {
-      apply algorithm2_msss_drance_againstb_correct; auto.
+      apply algorithm2_msss_foliance_againstb_correct; auto.
       repeat split; assumption.
     }
     destruct
       (find_complete
-         (algorithm2_msss_drance_againstb count_m reject_m k)
+         (algorithm2_msss_foliance_againstb count_m reject_m k)
          (algorithm2_search_space (fenfa_alphabet count_m) k [])
          (ex_intro _ w (conj Hin Hpred)))
       as [w' [Hfind [Hin' Hpred']]].
@@ -918,19 +918,19 @@ Section Algorithm2PaperLayer.
         subst w'. simpl.
         exact Hover_suffix.
       }
-      now apply algorithm2_msss_drance_againstb_correct.
+      now apply algorithm2_msss_foliance_againstb_correct.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_pref_against_complete :
+  Theorem algorithm2_search_msss_foliance_pref_against_complete :
     forall (count_m reject_m : @finite_enfa A) k,
-      algorithm2_msss_has_drance_pref_against count_m reject_m k ->
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k ->
       exists w,
-        algorithm2_search_msss_drance_pref_against count_m reject_m k = Some w /\
-        algorithm2_msss_drance_pref_against count_m reject_m k w.
+        algorithm2_search_msss_foliance_pref_against count_m reject_m k = Some w /\
+        algorithm2_msss_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k [w Hwit].
     destruct Hwit as [Hlen [Hover [Hreject Hleaf]]].
-    unfold algorithm2_search_msss_drance_pref_against, algorithm2_search_pref.
+    unfold algorithm2_search_msss_foliance_pref_against, algorithm2_search_pref.
     assert (Hin :
       In w (algorithm2_search_space (fenfa_alphabet count_m) k [])).
     {
@@ -938,14 +938,14 @@ Section Algorithm2PaperLayer.
       now apply algorithm2_search_space_complete.
     }
     assert (Hpred :
-      algorithm2_msss_drance_pref_againstb count_m reject_m k w = true).
+      algorithm2_msss_foliance_pref_againstb count_m reject_m k w = true).
     {
-      apply algorithm2_msss_drance_pref_againstb_correct; auto.
+      apply algorithm2_msss_foliance_pref_againstb_correct; auto.
       repeat split; assumption.
     }
     destruct
       (find_complete
-         (algorithm2_msss_drance_pref_againstb count_m reject_m k)
+         (algorithm2_msss_foliance_pref_againstb count_m reject_m k)
          (algorithm2_search_space (fenfa_alphabet count_m) k [])
          (ex_intro _ w (conj Hin Hpred)))
       as [w' [Hfind [Hin' Hpred']]].
@@ -960,7 +960,7 @@ Section Algorithm2PaperLayer.
         subst w'. simpl.
         exact Hover_suffix.
       }
-      now apply algorithm2_msss_drance_pref_againstb_correct.
+      now apply algorithm2_msss_foliance_pref_againstb_correct.
   Qed.
 
   Theorem algorithm2_search_pref_dfs_sound :
@@ -971,7 +971,7 @@ Section Algorithm2PaperLayer.
       leaf_sup = algorithm2_msss_leaf_prefix_max count_m w ->
       algorithm2_search_pref_dfs
         count_m reject_m k fuel X w leaf leaf_sup = Some v ->
-      algorithm2_msss_drance_pref_against count_m reject_m k v.
+      algorithm2_msss_foliance_pref_against count_m reject_m k v.
   Proof.
     intros count_m reject_m k fuel.
     induction fuel as [| fuel IH];
@@ -1009,14 +1009,14 @@ Section Algorithm2PaperLayer.
         * exact Hchild.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_pref_against_dfs_sound :
+  Theorem algorithm2_search_msss_foliance_pref_against_dfs_sound :
     forall (count_m reject_m : @finite_enfa A) k w,
-      algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+      algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k =
         Some w ->
-      algorithm2_msss_drance_pref_against count_m reject_m k w.
+      algorithm2_msss_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w Hsearch.
-    unfold algorithm2_search_msss_drance_pref_against_dfs in Hsearch.
+    unfold algorithm2_search_msss_foliance_pref_against_dfs in Hsearch.
     destruct (algorithm2_msss_rejectedb reject_m []) eqn:Hreject.
     - apply
         (algorithm2_search_pref_dfs_sound
@@ -1045,12 +1045,12 @@ Section Algorithm2PaperLayer.
       leaf_sup = algorithm2_msss_leaf_prefix_max count_m w ->
       length suffix <= fuel ->
       word_over (fenfa_alphabet count_m) suffix ->
-      algorithm2_msss_drance_pref_against
+      algorithm2_msss_foliance_pref_against
         count_m reject_m k (w ++ suffix) ->
       exists v,
         algorithm2_search_pref_dfs
           count_m reject_m k fuel X w leaf leaf_sup = Some v /\
-        algorithm2_msss_drance_pref_against count_m reject_m k v.
+        algorithm2_msss_foliance_pref_against count_m reject_m k v.
   Proof.
     intros count_m reject_m k fuel.
     induction fuel as [| fuel IH];
@@ -1113,7 +1113,7 @@ Section Algorithm2PaperLayer.
             length (w ++ [a]) + fuel <= k).
           { rewrite length_app. simpl. lia. }
           assert (Hchild_wit :
-            algorithm2_msss_drance_pref_against
+            algorithm2_msss_foliance_pref_against
               count_m reject_m k ((w ++ [a]) ++ suffix)).
           {
             replace ((w ++ [a]) ++ suffix) with (w ++ a :: suffix)
@@ -1166,13 +1166,13 @@ Section Algorithm2PaperLayer.
                 simpl. rewrite Hrejectb_w, Hleaf. exact Hfirst.
   Qed.
 
-  Theorem algorithm2_search_msss_drance_pref_against_dfs_complete :
+  Theorem algorithm2_search_msss_foliance_pref_against_dfs_complete :
     forall (count_m reject_m : @finite_enfa A) k,
-      algorithm2_msss_has_drance_pref_against count_m reject_m k ->
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k ->
       exists w,
-        algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+        algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k =
           Some w /\
-        algorithm2_msss_drance_pref_against count_m reject_m k w.
+        algorithm2_msss_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k [w Hwit].
     destruct Hwit as [Hlen [Hover [Hprefix Hleaf]]].
@@ -1182,7 +1182,7 @@ Section Algorithm2PaperLayer.
       apply prefixes_complete.
       exists w. reflexivity.
     }
-    unfold algorithm2_search_msss_drance_pref_against_dfs.
+    unfold algorithm2_search_msss_foliance_pref_against_dfs.
     eapply algorithm2_search_pref_dfs_complete with (suffix := w).
     - constructor.
     - simpl. lia.
@@ -1197,17 +1197,17 @@ Section Algorithm2PaperLayer.
   Theorem algorithm2_search_pref_dfs_some_iff :
     forall (count_m reject_m : @finite_enfa A) k,
       (exists w,
-        algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k =
+        algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k =
           Some w) <->
-      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k.
   Proof.
     intros count_m reject_m k. split.
     - intros [w H].
       exists w.
-      now apply algorithm2_search_msss_drance_pref_against_dfs_sound in H.
+      now apply algorithm2_search_msss_foliance_pref_against_dfs_sound in H.
     - intros Hhas.
       destruct
-        (algorithm2_search_msss_drance_pref_against_dfs_complete
+        (algorithm2_search_msss_foliance_pref_against_dfs_complete
            count_m reject_m k Hhas)
         as [w [H _]].
       exists w. exact H.
@@ -1216,16 +1216,16 @@ Section Algorithm2PaperLayer.
   Theorem algorithm2_search_some_iff :
     forall (count_m reject_m : @finite_enfa A) k,
       (exists w,
-        algorithm2_search_msss_drance_against count_m reject_m k = Some w) <->
-      algorithm2_msss_has_drance_against count_m reject_m k.
+        algorithm2_search_msss_foliance_against count_m reject_m k = Some w) <->
+      algorithm2_msss_has_foliance_against count_m reject_m k.
   Proof.
     intros count_m reject_m k. split.
     - intros [w H].
       exists w.
-      now apply algorithm2_search_msss_drance_against_sound in H.
+      now apply algorithm2_search_msss_foliance_against_sound in H.
     - intros Hhas.
       destruct
-        (algorithm2_search_msss_drance_against_complete
+        (algorithm2_search_msss_foliance_against_complete
            count_m reject_m k Hhas)
         as [w [H _]].
       exists w. exact H.
@@ -1234,16 +1234,16 @@ Section Algorithm2PaperLayer.
   Theorem algorithm2_search_pref_some_iff :
     forall (count_m reject_m : @finite_enfa A) k,
       (exists w,
-        algorithm2_search_msss_drance_pref_against count_m reject_m k = Some w) <->
-      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+        algorithm2_search_msss_foliance_pref_against count_m reject_m k = Some w) <->
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k.
   Proof.
     intros count_m reject_m k. split.
     - intros [w H].
       exists w.
-      now apply algorithm2_search_msss_drance_pref_against_sound in H.
+      now apply algorithm2_search_msss_foliance_pref_against_sound in H.
     - intros Hhas.
       destruct
-        (algorithm2_search_msss_drance_pref_against_complete
+        (algorithm2_search_msss_foliance_pref_against_complete
            count_m reject_m k Hhas)
         as [w [H _]].
       exists w. exact H.
@@ -1251,41 +1251,41 @@ Section Algorithm2PaperLayer.
 
   Theorem algorithm2_decide_msss_correct :
     forall (m : @finite_enfa A) k,
-      algorithm2_decide_msss_drance m k = true <->
-      algorithm2_msss_has_drance m k.
+      algorithm2_decide_msss_foliance m k = true <->
+      algorithm2_msss_has_foliance m k.
   Proof.
     intros m k.
-    unfold algorithm2_decide_msss_drance,
-      algorithm2_decide_msss_drance_against.
-    destruct (algorithm2_search_msss_drance_against m m k) as [w |] eqn:H.
+    unfold algorithm2_decide_msss_foliance,
+      algorithm2_decide_msss_foliance_against.
+    destruct (algorithm2_search_msss_foliance_against m m k) as [w |] eqn:H.
     - split; intros _.
-      + exists w. now apply algorithm2_search_msss_drance_against_sound.
+      + exists w. now apply algorithm2_search_msss_foliance_against_sound.
       + reflexivity.
     - split; intros Hfalse.
       + discriminate.
       + destruct
-          (algorithm2_search_msss_drance_against_complete m m k Hfalse)
+          (algorithm2_search_msss_foliance_against_complete m m k Hfalse)
           as [w [Hsome _]].
         rewrite H in Hsome. discriminate.
   Qed.
 
   Theorem algorithm2_decide_msss_pref_correct :
     forall (count_m reject_m : @finite_enfa A) k,
-      algorithm2_decide_msss_drance_pref_against count_m reject_m k = true <->
-      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+      algorithm2_decide_msss_foliance_pref_against count_m reject_m k = true <->
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k.
   Proof.
     intros count_m reject_m k.
-    unfold algorithm2_decide_msss_drance_pref_against.
+    unfold algorithm2_decide_msss_foliance_pref_against.
     destruct
-      (algorithm2_search_msss_drance_pref_against count_m reject_m k)
+      (algorithm2_search_msss_foliance_pref_against count_m reject_m k)
       as [w |] eqn:H.
     - split; intros _.
-      + exists w. now apply algorithm2_search_msss_drance_pref_against_sound.
+      + exists w. now apply algorithm2_search_msss_foliance_pref_against_sound.
       + reflexivity.
     - split; intros Hfalse.
       + discriminate.
       + destruct
-          (algorithm2_search_msss_drance_pref_against_complete
+          (algorithm2_search_msss_foliance_pref_against_complete
              count_m reject_m k Hfalse)
           as [w [Hsome _]].
         rewrite H in Hsome. discriminate.
@@ -1293,39 +1293,39 @@ Section Algorithm2PaperLayer.
 
   Theorem algorithm2_decide_msss_pref_dfs_correct :
     forall (count_m reject_m : @finite_enfa A) k,
-      algorithm2_decide_msss_drance_pref_against_dfs count_m reject_m k =
+      algorithm2_decide_msss_foliance_pref_against_dfs count_m reject_m k =
         true <->
-      algorithm2_msss_has_drance_pref_against count_m reject_m k.
+      algorithm2_msss_has_foliance_pref_against count_m reject_m k.
   Proof.
     intros count_m reject_m k.
-    unfold algorithm2_decide_msss_drance_pref_against_dfs.
+    unfold algorithm2_decide_msss_foliance_pref_against_dfs.
     destruct
-      (algorithm2_search_msss_drance_pref_against_dfs count_m reject_m k)
+      (algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k)
       as [w |] eqn:H.
     - split; intros _.
-      + exists w. now apply algorithm2_search_msss_drance_pref_against_dfs_sound.
+      + exists w. now apply algorithm2_search_msss_foliance_pref_against_dfs_sound.
       + reflexivity.
     - split; intros Hfalse.
       + discriminate.
       + destruct
-          (algorithm2_search_msss_drance_pref_against_dfs_complete
+          (algorithm2_search_msss_foliance_pref_against_dfs_complete
              count_m reject_m k Hfalse)
           as [w [Hsome _]].
         rewrite H in Hsome. discriminate.
   Qed.
 
-  Theorem algorithm2_decide_regex_msss_drance_pref_correct :
+  Theorem algorithm2_decide_regex_msss_foliance_pref_correct :
     forall alphabet label_matches (count_r reject_r : regex A) k,
-      algorithm2_decide_regex_msss_drance_pref_dfs
+      algorithm2_decide_regex_msss_foliance_pref_dfs
         alphabet label_matches count_r reject_r k = true <->
-      algorithm2_msss_has_drance_pref_against
+      algorithm2_msss_has_foliance_pref_against
         (algorithm2_msss_machine alphabet label_matches count_r)
         (algorithm2_msss_machine
            alphabet label_matches (algorithm2_pref_regex alphabet reject_r))
         k.
   Proof.
     intros alphabet label_matches count_r reject_r k.
-    unfold algorithm2_decide_regex_msss_drance_pref_dfs.
+    unfold algorithm2_decide_regex_msss_foliance_pref_dfs.
     apply algorithm2_decide_msss_pref_dfs_correct.
   Qed.
 
@@ -1418,7 +1418,7 @@ Section Algorithm2PaperLayer.
   Qed.
 End Algorithm2PaperLayer.
 
-Section Algorithm2DranceExamples.
+Section Algorithm2FolianceExamples.
   Fixpoint algorithm2_bool_list_eqb (xs ys : list bool) : bool :=
     match xs, ys with
     | [], [] => true
@@ -1452,8 +1452,8 @@ Section Algorithm2DranceExamples.
     - apply algorithm2_bool_list_eqb_complete.
   Qed.
 
-  Lemma algorithm2_bool_drance_ambiguous_a_closed :
-    regex_symbol_closed [true; false] Bool.eqb drance_ambiguous_a.
+  Lemma algorithm2_bool_foliance_ambiguous_a_closed :
+    regex_symbol_closed [true; false] Bool.eqb foliance_ambiguous_a.
   Proof.
     intros b a _ Hmatch.
     destruct b, a; simpl in Hmatch; try discriminate; simpl; auto.
@@ -1469,68 +1469,68 @@ Section Algorithm2DranceExamples.
       + constructor.
   Qed.
 
-  Example algorithm2_drance_ambiguous_a_solver :
-    algorithm2_solve_regex_drance
+  Example algorithm2_foliance_ambiguous_a_solver :
+    algorithm2_solve_regex_foliance
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
+      foliance_ambiguous_a
       2 =
     Some [true; true].
   Proof. reflexivity. Qed.
 
-  Example algorithm2_search_drance_ambiguous_a_solver :
-    algorithm2_search_regex_drance
+  Example algorithm2_search_foliance_ambiguous_a_solver :
+    algorithm2_search_regex_foliance
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
+      foliance_ambiguous_a
       2 =
     Some [true; true].
   Proof. reflexivity. Qed.
 
-  Example algorithm2_decide_drance_ambiguous_a_solver :
-    algorithm2_decide_regex_msss_drance
+  Example algorithm2_decide_foliance_ambiguous_a_solver :
+    algorithm2_decide_regex_msss_foliance
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
+      foliance_ambiguous_a
       2 = true.
   Proof. reflexivity. Qed.
 
-  Example algorithm2_search_drance_pref_independent_reject_solver :
-    algorithm2_search_regex_drance_pref
+  Example algorithm2_search_foliance_pref_independent_reject_solver :
+    algorithm2_search_regex_foliance_pref
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
-      drance_reject_false
+      foliance_ambiguous_a
+      foliance_reject_false
       2 =
     Some [true].
   Proof. reflexivity. Qed.
 
-  Example algorithm2_search_drance_pref_independent_reject_dfs_solver :
-    algorithm2_search_regex_drance_pref_dfs
+  Example algorithm2_search_foliance_pref_independent_reject_dfs_solver :
+    algorithm2_search_regex_foliance_pref_dfs
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
-      drance_reject_false
+      foliance_ambiguous_a
+      foliance_reject_false
       2 =
     Some [true].
   Proof. reflexivity. Qed.
 
   Example algorithm2_msss_gamma_leaf_bridge_smoke :
     algorithm2_msss_leaf
-      (algorithm2_msss_machine [true; false] Bool.eqb drance_ambiguous_a)
+      (algorithm2_msss_machine [true; false] Bool.eqb foliance_ambiguous_a)
       [true] =
     rlg_prefix_leaf_prime_count
-      (algorithm2_gamma_grammar [true; false] Bool.eqb drance_ambiguous_a)
+      (algorithm2_gamma_grammar [true; false] Bool.eqb foliance_ambiguous_a)
       (fenfa_state_eqb
-         (algorithm2_msss_machine [true; false] Bool.eqb drance_ambiguous_a))
+         (algorithm2_msss_machine [true; false] Bool.eqb foliance_ambiguous_a))
       algorithm2_bool_list_eqb
       (enfa_trace_bound
-         (algorithm2_msss_machine [true; false] Bool.eqb drance_ambiguous_a)
+         (algorithm2_msss_machine [true; false] Bool.eqb foliance_ambiguous_a)
          [true])
       [true].
   Proof.
     apply algorithm2_msss_gamma_leaf_bridge.
-    - apply algorithm2_bool_drance_ambiguous_a_closed.
+    - apply algorithm2_bool_foliance_ambiguous_a_closed.
     - apply algorithm2_bool_alphabet_nodup.
     - apply algorithm2_bool_list_eqb_reflects_eq.
   Qed.
@@ -1538,12 +1538,12 @@ Section Algorithm2DranceExamples.
   Example algorithm2_msss_lr_projected_leaf_bridge_smoke :
     lr1_projected_leaf_count
       Bool.bool_dec
-      (algorithm2_msss_machine [true; false] Bool.eqb drance_ambiguous_a)
+      (algorithm2_msss_machine [true; false] Bool.eqb foliance_ambiguous_a)
       [true] =
     algorithm2_msss_leaf
-      (algorithm2_msss_machine [true; false] Bool.eqb drance_ambiguous_a)
+      (algorithm2_msss_machine [true; false] Bool.eqb foliance_ambiguous_a)
       [true].
   Proof.
     apply algorithm2_lr_projected_leaf_bridge.
   Qed.
-End Algorithm2DranceExamples.
+End Algorithm2FolianceExamples.
