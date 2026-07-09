@@ -5,17 +5,17 @@ From PositionAutomata.Core Require Import Syntax.
 From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity DegreeofInfiniteAmbiguity.
 From PositionAutomata.Regex Require Import RegexReDoS.
 
-(** Reach-ambiguity and drance strings over the existing finite-NFA core.
+(** Reach-ambiguity and foliance strings over the existing finite-NFA core.
 
     This file is intentionally a first verified layer over the current project:
     it reuses [finite_nfa], the position-NFA regex construction, and the
     executable word enumeration already used by the ambiguity witnesses.  It
     does not introduce epsilon-NFAs, LR machines, or simulation pruning. *)
 
-Section ReachAmbiguityDrance.
+Section ReachAmbiguityFoliance.
   Context {A : Type}.
 
-  (** Epsilon-free NFA measures used by the drance layer.
+  (** Epsilon-free NFA measures used by the foliance layer.
       [da_between] fixes both endpoints, [da_word] counts accepting runs,
       [dra_at] counts runs from an initial state to one endpoint,
       [dra_word] maximizes over endpoints, and [eta_word] sums them. *)
@@ -128,7 +128,7 @@ Section ReachAmbiguityDrance.
 
   (* Regex entry point: convert [E] to a position NFA, then reuse NFA measures. *)
 
-  Definition regex_drance_nfa
+  Definition regex_foliance_nfa
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A) : @finite_nfa A :=
@@ -140,22 +140,22 @@ Section ReachAmbiguityDrance.
       (r : regex A)
       (w : list A)
       (q : nfa_state
-             (fnfa_base (regex_drance_nfa alphabet label_matches r))) : nat :=
-    dra_at (regex_drance_nfa alphabet label_matches r) w q.
+             (fnfa_base (regex_foliance_nfa alphabet label_matches r))) : nat :=
+    dra_at (regex_foliance_nfa alphabet label_matches r) w q.
 
   Definition regex_eta_word
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (w : list A) : nat :=
-    eta_word (regex_drance_nfa alphabet label_matches r) w.
+    eta_word (regex_foliance_nfa alphabet label_matches r) w.
 
   Definition regex_da_word
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (w : list A) : nat :=
-    da_word (regex_drance_nfa alphabet label_matches r) w.
+    da_word (regex_foliance_nfa alphabet label_matches r) w.
 
   (* Problems 4/5, bounded executable form: enumerate words up to [k],
      then take maxima of da/dra/eta over those candidates. *)
@@ -205,7 +205,7 @@ Section ReachAmbiguityDrance.
   Definition solve_k_dra (m : @finite_nfa A) (k : nat) : option (list A) :=
     find (k_drab m k) (candidate_words m k).
 
-  (* Problem 9: a k-drance word is rejected, while some prefix reaches eta >= k. *)
+  (* Problem 9: a k-foliance word is rejected, while some prefix reaches eta >= k. *)
 
   Fixpoint prefixes (w : list A) : list (list A) :=
     match w with
@@ -222,18 +222,18 @@ Section ReachAmbiguityDrance.
   Definition rejectedb (m : @finite_nfa A) (w : list A) : bool :=
     Nat.eqb (da_word m w) 0.
 
-  Definition k_drance (m : @finite_nfa A) (k : nat) (w : list A) : Prop :=
+  Definition k_foliance (m : @finite_nfa A) (k : nat) (w : list A) : Prop :=
     length w <= k /\
     rejected m w /\
     k <= eta_prefix_max m w.
 
-  Definition k_dranceb (m : @finite_nfa A) (k : nat) (w : list A) : bool :=
+  Definition k_folianceb (m : @finite_nfa A) (k : nat) (w : list A) : bool :=
     (length w <=? k)
     && rejectedb m w
     && (k <=? eta_prefix_max m w).
 
-  Definition has_k_drance (m : @finite_nfa A) (k : nat) : Prop :=
-    exists w, k_drance m k w.
+  Definition has_k_foliance (m : @finite_nfa A) (k : nat) : Prop :=
+    exists w, k_foliance m k w.
 
   (* Problem 10 prefix-free variant.  The [against] forms separate the
      eta-counting automaton from the rejection automaton, matching partial
@@ -245,7 +245,7 @@ Section ReachAmbiguityDrance.
   Definition prefix_rejectedb (m : @finite_nfa A) (w : list A) : bool :=
     forallb (rejectedb m) (prefixes w).
 
-  Definition k_drance_against
+  Definition k_foliance_against
       (count_m reject_m : @finite_nfa A)
       (k : nat)
       (w : list A) : Prop :=
@@ -253,7 +253,7 @@ Section ReachAmbiguityDrance.
     rejected reject_m w /\
     k <= eta_prefix_max count_m w.
 
-  Definition k_drance_againstb
+  Definition k_foliance_againstb
       (count_m reject_m : @finite_nfa A)
       (k : nat)
       (w : list A) : bool :=
@@ -261,7 +261,7 @@ Section ReachAmbiguityDrance.
     && rejectedb reject_m w
     && (k <=? eta_prefix_max count_m w).
 
-  Definition k_drance_pref_against
+  Definition k_foliance_pref_against
       (count_m reject_m : @finite_nfa A)
       (k : nat)
       (w : list A) : Prop :=
@@ -269,7 +269,7 @@ Section ReachAmbiguityDrance.
     prefix_rejected reject_m w /\
     k <= eta_prefix_max count_m w.
 
-  Definition k_drance_pref_againstb
+  Definition k_foliance_pref_againstb
       (count_m reject_m : @finite_nfa A)
       (k : nat)
       (w : list A) : bool :=
@@ -277,37 +277,37 @@ Section ReachAmbiguityDrance.
     && prefix_rejectedb reject_m w
     && (k <=? eta_prefix_max count_m w).
 
-  Definition solve_drance (m : @finite_nfa A) (k : nat) : option (list A) :=
-    find (k_dranceb m k) (candidate_words m k).
+  Definition solve_foliance (m : @finite_nfa A) (k : nat) : option (list A) :=
+    find (k_folianceb m k) (candidate_words m k).
 
-  Definition solve_drance_against
+  Definition solve_foliance_against
       (count_m reject_m : @finite_nfa A)
       (k : nat) : option (list A) :=
-    find (k_drance_againstb count_m reject_m k) (candidate_words count_m k).
+    find (k_foliance_againstb count_m reject_m k) (candidate_words count_m k).
 
-  Definition solve_drance_pref_against
+  Definition solve_foliance_pref_against
       (count_m reject_m : @finite_nfa A)
       (k : nat) : option (list A) :=
-    find (k_drance_pref_againstb count_m reject_m k) (candidate_words count_m k).
+    find (k_foliance_pref_againstb count_m reject_m k) (candidate_words count_m k).
 
-  (* Regex-level solvers: ordinary drance uses one regex; prefix-free or
+  (* Regex-level solvers: ordinary foliance uses one regex; prefix-free or
      partial settings may use separate eta-counting and rejection regexes. *)
 
-  Definition solve_regex_drance
+  Definition solve_regex_foliance
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A)
       (k : nat) : option (list A) :=
-    solve_drance (regex_drance_nfa alphabet label_matches r) k.
+    solve_foliance (regex_foliance_nfa alphabet label_matches r) k.
 
-  Definition solve_regex_drance_pref_against
+  Definition solve_regex_foliance_pref_against
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (count_r reject_r : regex A)
       (k : nat) : option (list A) :=
-    solve_drance_pref_against
-      (regex_drance_nfa alphabet label_matches count_r)
-      (regex_drance_nfa alphabet label_matches reject_r)
+    solve_foliance_pref_against
+      (regex_foliance_nfa alphabet label_matches count_r)
+      (regex_foliance_nfa alphabet label_matches reject_r)
       k.
 
   (* Mathematical specs for candidates and prefixes:
@@ -933,12 +933,12 @@ Section ReachAmbiguityDrance.
       + now apply Nat.leb_le.
   Qed.
 
-  Theorem k_dranceb_correct :
+  Theorem k_folianceb_correct :
     forall (m : @finite_nfa A) k w,
-      k_dranceb m k w = true <-> k_drance m k w.
+      k_folianceb m k w = true <-> k_foliance m k w.
   Proof.
     intros m k w.
-    unfold k_dranceb, k_drance, rejectedb, rejected.
+    unfold k_folianceb, k_foliance, rejectedb, rejected.
     split; intros H.
     - apply andb_true_iff in H as [Hleft Heta].
       apply andb_true_iff in Hleft as [Hlen Hrej].
@@ -980,13 +980,13 @@ Section ReachAmbiguityDrance.
       now apply H.
   Qed.
 
-  Theorem k_drance_againstb_correct :
+  Theorem k_foliance_againstb_correct :
     forall (count_m reject_m : @finite_nfa A) k w,
-      k_drance_againstb count_m reject_m k w = true <->
-      k_drance_against count_m reject_m k w.
+      k_foliance_againstb count_m reject_m k w = true <->
+      k_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w.
-    unfold k_drance_againstb, k_drance_against, rejectedb, rejected.
+    unfold k_foliance_againstb, k_foliance_against, rejectedb, rejected.
     split; intros H.
     - apply andb_true_iff in H as [Hleft Heta].
       apply andb_true_iff in Hleft as [Hlen Hrej].
@@ -1002,13 +1002,13 @@ Section ReachAmbiguityDrance.
       + now apply Nat.leb_le.
   Qed.
 
-  Theorem k_drance_pref_againstb_correct :
+  Theorem k_foliance_pref_againstb_correct :
     forall (count_m reject_m : @finite_nfa A) k w,
-      k_drance_pref_againstb count_m reject_m k w = true <->
-      k_drance_pref_against count_m reject_m k w.
+      k_foliance_pref_againstb count_m reject_m k w = true <->
+      k_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w.
-    unfold k_drance_pref_againstb, k_drance_pref_against.
+    unfold k_foliance_pref_againstb, k_foliance_pref_against.
     split; intros H.
     - apply andb_true_iff in H as [Hleft Heta].
       apply andb_true_iff in Hleft as [Hlen Hprefix].
@@ -1024,32 +1024,32 @@ Section ReachAmbiguityDrance.
       + now apply Nat.leb_le.
   Qed.
 
-  Theorem k_drance_against_same :
+  Theorem k_foliance_against_same :
     forall (m : @finite_nfa A) k w,
-      k_drance_against m m k w <-> k_drance m k w.
+      k_foliance_against m m k w <-> k_foliance m k w.
   Proof.
     intros m k w.
-    unfold k_drance_against, k_drance.
+    unfold k_foliance_against, k_foliance.
     tauto.
   Qed.
 
-  (* [k_drance_pref] is stronger than [k_drance]: every prefix is rejected. *)
+  (* [k_foliance_pref] is stronger than [k_foliance]: every prefix is rejected. *)
 
-  Theorem k_drance_pref_against_drance_against :
+  Theorem k_foliance_pref_against_foliance_against :
     forall (count_m reject_m : @finite_nfa A) k w,
-      k_drance_pref_against count_m reject_m k w ->
-      k_drance_against count_m reject_m k w.
+      k_foliance_pref_against count_m reject_m k w ->
+      k_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w [Hlen [Hprefix Heta]].
     repeat split; auto.
     now apply prefix_rejected_rejected.
   Qed.
 
-  (* Problem 9 prefix-max witness: a k-drance word has a prefix with eta >= k. *)
+  (* Problem 9 prefix-max witness: a k-foliance word has a prefix with eta >= k. *)
 
-  Theorem k_drance_eta_prefix_witness :
+  Theorem k_foliance_eta_prefix_witness :
     forall (m : @finite_nfa A) k w,
-      k_drance m k w ->
+      k_foliance m k w ->
       exists u,
         In u (prefixes w) /\
         k <= eta_word m u.
@@ -1070,9 +1070,9 @@ Section ReachAmbiguityDrance.
       lia.
   Qed.
 
-  Theorem k_drance_against_eta_prefix_witness :
+  Theorem k_foliance_against_eta_prefix_witness :
     forall (count_m reject_m : @finite_nfa A) k w,
-      k_drance_against count_m reject_m k w ->
+      k_foliance_against count_m reject_m k w ->
       exists u,
         In u (prefixes w) /\
         k <= eta_word count_m u.
@@ -1093,11 +1093,11 @@ Section ReachAmbiguityDrance.
       lia.
   Qed.
 
-  (* Lemma 4 non-co-empty direction: any k-drance word rules out k-co-emptiness. *)
+  (* Lemma 4 non-co-empty direction: any k-foliance word rules out k-co-emptiness. *)
 
-  Theorem k_drance_not_k_co_empty :
+  Theorem k_foliance_not_k_co_empty :
     forall (m : @finite_nfa A) k w,
-      k_drance m k w ->
+      k_foliance m k w ->
       ~ k_co_empty m k.
   Proof.
     intros m k w [Hlen [Hrej _]] Hco.
@@ -1106,13 +1106,13 @@ Section ReachAmbiguityDrance.
     lia.
   Qed.
 
-  Theorem has_k_drance_not_k_co_empty :
+  Theorem has_k_foliance_not_k_co_empty :
     forall (m : @finite_nfa A) k,
-      has_k_drance m k ->
+      has_k_foliance m k ->
       ~ k_co_empty m k.
   Proof.
     intros m k [w Hw].
-    now apply k_drance_not_k_co_empty with (w := w).
+    now apply k_foliance_not_k_co_empty with (w := w).
   Qed.
 
   (* All enumeration solvers use [find]; first prove generic soundness and
@@ -1223,233 +1223,233 @@ Section ReachAmbiguityDrance.
       now apply k_drab_correct.
   Qed.
 
-  Theorem solve_drance_sound :
+  Theorem solve_foliance_sound :
     forall (m : @finite_nfa A) k w,
-      solve_drance m k = Some w ->
-      In w (candidate_words m k) /\ k_drance m k w.
+      solve_foliance m k = Some w ->
+      In w (candidate_words m k) /\ k_foliance m k w.
   Proof.
     intros m k w Hsolve.
-    unfold solve_drance in Hsolve.
+    unfold solve_foliance in Hsolve.
     apply find_sound in Hsolve as [Hin Hk].
     split; auto.
-      now apply k_dranceb_correct.
+      now apply k_folianceb_correct.
   Qed.
 
-  Theorem solve_drance_against_sound :
+  Theorem solve_foliance_against_sound :
     forall (count_m reject_m : @finite_nfa A) k w,
-      solve_drance_against count_m reject_m k = Some w ->
+      solve_foliance_against count_m reject_m k = Some w ->
       In w (candidate_words count_m k) /\
-      k_drance_against count_m reject_m k w.
+      k_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w Hsolve.
-    unfold solve_drance_against in Hsolve.
+    unfold solve_foliance_against in Hsolve.
     apply find_sound in Hsolve as [Hin Hk].
     split; auto.
-    now apply k_drance_againstb_correct.
+    now apply k_foliance_againstb_correct.
   Qed.
 
-  Theorem solve_drance_pref_against_sound :
+  Theorem solve_foliance_pref_against_sound :
     forall (count_m reject_m : @finite_nfa A) k w,
-      solve_drance_pref_against count_m reject_m k = Some w ->
+      solve_foliance_pref_against count_m reject_m k = Some w ->
       In w (candidate_words count_m k) /\
-      k_drance_pref_against count_m reject_m k w.
+      k_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k w Hsolve.
-    unfold solve_drance_pref_against in Hsolve.
+    unfold solve_foliance_pref_against in Hsolve.
     apply find_sound in Hsolve as [Hin Hk].
     split; auto.
-    now apply k_drance_pref_againstb_correct.
+    now apply k_foliance_pref_againstb_correct.
   Qed.
 
-  Theorem solve_drance_complete_over_candidates :
+  Theorem solve_foliance_complete_over_candidates :
     forall (m : @finite_nfa A) k,
-      (exists w, In w (candidate_words m k) /\ k_drance m k w) ->
+      (exists w, In w (candidate_words m k) /\ k_foliance m k w) ->
       exists w,
-        solve_drance m k = Some w /\
+        solve_foliance m k = Some w /\
         In w (candidate_words m k) /\
-        k_drance m k w.
+        k_foliance m k w.
   Proof.
     intros m k [w [Hin Hk]].
-    unfold solve_drance.
+    unfold solve_foliance.
     destruct
       (find_complete
-         (k_dranceb m k)
+         (k_folianceb m k)
          (candidate_words m k)
-         (ex_intro _ w (conj Hin ((proj2 (k_dranceb_correct m k w)) Hk))))
+         (ex_intro _ w (conj Hin ((proj2 (k_folianceb_correct m k w)) Hk))))
       as [w' [Hfind [Hin' Hk']]].
     exists w'. split.
     - exact Hfind.
     - split; auto.
-      now apply k_dranceb_correct.
+      now apply k_folianceb_correct.
   Qed.
 
-  Theorem solve_drance_against_complete_over_candidates :
+  Theorem solve_foliance_against_complete_over_candidates :
     forall (count_m reject_m : @finite_nfa A) k,
       (exists w,
         In w (candidate_words count_m k) /\
-        k_drance_against count_m reject_m k w) ->
+        k_foliance_against count_m reject_m k w) ->
       exists w,
-        solve_drance_against count_m reject_m k = Some w /\
+        solve_foliance_against count_m reject_m k = Some w /\
         In w (candidate_words count_m k) /\
-        k_drance_against count_m reject_m k w.
+        k_foliance_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k [w [Hin Hk]].
-    unfold solve_drance_against.
+    unfold solve_foliance_against.
     destruct
       (find_complete
-         (k_drance_againstb count_m reject_m k)
+         (k_foliance_againstb count_m reject_m k)
          (candidate_words count_m k)
          (ex_intro _
             w
             (conj
                Hin
                ((proj2
-                   (k_drance_againstb_correct count_m reject_m k w))
+                   (k_foliance_againstb_correct count_m reject_m k w))
                   Hk))))
       as [w' [Hfind [Hin' Hk']]].
     exists w'. split.
     - exact Hfind.
     - split; auto.
-      now apply k_drance_againstb_correct.
+      now apply k_foliance_againstb_correct.
   Qed.
 
-  Theorem solve_drance_pref_against_complete_over_candidates :
+  Theorem solve_foliance_pref_against_complete_over_candidates :
     forall (count_m reject_m : @finite_nfa A) k,
       (exists w,
         In w (candidate_words count_m k) /\
-        k_drance_pref_against count_m reject_m k w) ->
+        k_foliance_pref_against count_m reject_m k w) ->
       exists w,
-        solve_drance_pref_against count_m reject_m k = Some w /\
+        solve_foliance_pref_against count_m reject_m k = Some w /\
         In w (candidate_words count_m k) /\
-        k_drance_pref_against count_m reject_m k w.
+        k_foliance_pref_against count_m reject_m k w.
   Proof.
     intros count_m reject_m k [w [Hin Hk]].
-    unfold solve_drance_pref_against.
+    unfold solve_foliance_pref_against.
     destruct
       (find_complete
-         (k_drance_pref_againstb count_m reject_m k)
+         (k_foliance_pref_againstb count_m reject_m k)
          (candidate_words count_m k)
          (ex_intro _
             w
             (conj
                Hin
                ((proj2
-                   (k_drance_pref_againstb_correct count_m reject_m k w))
+                   (k_foliance_pref_againstb_correct count_m reject_m k w))
                   Hk))))
       as [w' [Hfind [Hin' Hk']]].
     exists w'. split.
     - exact Hfind.
     - split; auto.
-      now apply k_drance_pref_againstb_correct.
+      now apply k_foliance_pref_againstb_correct.
   Qed.
 
-  Theorem solve_regex_drance_pref_against_sound :
+  Theorem solve_regex_foliance_pref_against_sound :
     forall alphabet label_matches count_r reject_r k w,
-      solve_regex_drance_pref_against
+      solve_regex_foliance_pref_against
         alphabet label_matches count_r reject_r k = Some w ->
       In w
         (candidate_words
-           (regex_drance_nfa alphabet label_matches count_r)
+           (regex_foliance_nfa alphabet label_matches count_r)
            k) /\
-      k_drance_pref_against
-        (regex_drance_nfa alphabet label_matches count_r)
-        (regex_drance_nfa alphabet label_matches reject_r)
+      k_foliance_pref_against
+        (regex_foliance_nfa alphabet label_matches count_r)
+        (regex_foliance_nfa alphabet label_matches reject_r)
         k
         w.
   Proof.
     intros alphabet label_matches count_r reject_r k w Hsolve.
-    unfold solve_regex_drance_pref_against in Hsolve.
-    now apply solve_drance_pref_against_sound in Hsolve.
+    unfold solve_regex_foliance_pref_against in Hsolve.
+    now apply solve_foliance_pref_against_sound in Hsolve.
   Qed.
-End ReachAmbiguityDrance.
+End ReachAmbiguityFoliance.
 
-Section ReachAmbiguityDranceExamples.
+Section ReachAmbiguityFolianceExamples.
   (* Example: true + true has two accepting branches; eta can be 2 while
      max-dra need not be 2 when the branches end in different states. *)
 
-  Definition drance_ambiguous_a : regex bool :=
+  Definition foliance_ambiguous_a : regex bool :=
     Alt (Atom true) (Atom true).
 
-  Definition drance_ambiguous_a_nfa : @finite_nfa bool :=
-    regex_drance_nfa [true; false] Bool.eqb drance_ambiguous_a.
+  Definition foliance_ambiguous_a_nfa : @finite_nfa bool :=
+    regex_foliance_nfa [true; false] Bool.eqb foliance_ambiguous_a.
 
-  Example drance_ambiguous_a_da_word :
-    regex_da_word [true] Bool.eqb drance_ambiguous_a [true] = 2.
+  Example foliance_ambiguous_a_da_word :
+    regex_da_word [true] Bool.eqb foliance_ambiguous_a [true] = 2.
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_eta_word :
-    regex_eta_word [true] Bool.eqb drance_ambiguous_a [true] = 2.
+  Example foliance_ambiguous_a_eta_word :
+    regex_eta_word [true] Bool.eqb foliance_ambiguous_a [true] = 2.
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_solver :
-    solve_regex_drance [true; false] Bool.eqb drance_ambiguous_a 2 =
+  Example foliance_ambiguous_a_solver :
+    solve_regex_foliance [true; false] Bool.eqb foliance_ambiguous_a 2 =
       Some [true; true].
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_solution_check :
-    k_dranceb
-      (regex_drance_nfa [true; false] Bool.eqb drance_ambiguous_a)
+  Example foliance_ambiguous_a_solution_check :
+    k_folianceb
+      (regex_foliance_nfa [true; false] Bool.eqb foliance_ambiguous_a)
       2
       [true; true] = true.
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_k_da_solver :
-    solve_k_da drance_ambiguous_a_nfa 2 = Some [true].
+  Example foliance_ambiguous_a_k_da_solver :
+    solve_k_da foliance_ambiguous_a_nfa 2 = Some [true].
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_k_dra_solver :
-    solve_k_dra drance_ambiguous_a_nfa 1 = Some [true].
+  Example foliance_ambiguous_a_k_dra_solver :
+    solve_k_dra foliance_ambiguous_a_nfa 1 = Some [true].
   Proof. reflexivity. Qed.
 
-  Example drance_ambiguous_a_not_2_co_empty :
-    ~ k_co_empty drance_ambiguous_a_nfa 2.
+  Example foliance_ambiguous_a_not_2_co_empty :
+    ~ k_co_empty foliance_ambiguous_a_nfa 2.
   Proof.
-    eapply k_drance_not_k_co_empty with (w := [true; true]).
-    apply k_dranceb_correct.
+    eapply k_foliance_not_k_co_empty with (w := [true; true]).
+    apply k_folianceb_correct.
     reflexivity.
   Qed.
 
-  Definition drance_reject_false : regex bool :=
+  Definition foliance_reject_false : regex bool :=
     Atom false.
 
-  Definition drance_reject_false_nfa : @finite_nfa bool :=
-    regex_drance_nfa [true; false] Bool.eqb drance_reject_false.
+  Definition foliance_reject_false_nfa : @finite_nfa bool :=
+    regex_foliance_nfa [true; false] Bool.eqb foliance_reject_false.
 
-  Example drance_pref_independent_reject_check :
-    k_drance_pref_againstb
-      drance_ambiguous_a_nfa
-      drance_reject_false_nfa
+  Example foliance_pref_independent_reject_check :
+    k_foliance_pref_againstb
+      foliance_ambiguous_a_nfa
+      foliance_reject_false_nfa
       2
       [true] = true.
   Proof. reflexivity. Qed.
 
-  Example drance_pref_independent_reject_solver :
-    solve_regex_drance_pref_against
+  Example foliance_pref_independent_reject_solver :
+    solve_regex_foliance_pref_against
       [true; false]
       Bool.eqb
-      drance_ambiguous_a
-      drance_reject_false
+      foliance_ambiguous_a
+      foliance_reject_false
       2 = Some [true].
   Proof. reflexivity. Qed.
 
   (** One-state NFA: duplicate edges on the same symbol return to the same
       state, so [dra_word] can actually reach 2. *)
 
-  Definition drance_unit_eqb (_ _ : unit) : bool := true.
+  Definition foliance_unit_eqb (_ _ : unit) : bool := true.
 
-  Lemma drance_unit_eqb_sound :
-    forall x y, drance_unit_eqb x y = true -> x = y.
+  Lemma foliance_unit_eqb_sound :
+    forall x y, foliance_unit_eqb x y = true -> x = y.
   Proof.
     intros [] [] _. reflexivity.
   Qed.
 
-  Lemma drance_unit_eqb_complete :
-    forall x y, x = y -> drance_unit_eqb x y = true.
+  Lemma foliance_unit_eqb_complete :
+    forall x y, x = y -> foliance_unit_eqb x y = true.
   Proof.
     intros [] [] _. reflexivity.
   Qed.
 
-  Definition drance_duplicated_loop_nfa : @finite_nfa bool :=
+  Definition foliance_duplicated_loop_nfa : @finite_nfa bool :=
     {|
       fnfa_base :=
         {|
@@ -1461,12 +1461,12 @@ Section ReachAmbiguityDranceExamples.
         |};
       fnfa_states := [tt];
       fnfa_alphabet := [true];
-      fnfa_state_eqb := drance_unit_eqb;
-      fnfa_state_eqb_sound := drance_unit_eqb_sound;
-      fnfa_state_eqb_complete := drance_unit_eqb_complete
+      fnfa_state_eqb := foliance_unit_eqb;
+      fnfa_state_eqb_sound := foliance_unit_eqb_sound;
+      fnfa_state_eqb_complete := foliance_unit_eqb_complete
     |}.
 
-  Example drance_duplicated_loop_dra_word :
-    dra_word drance_duplicated_loop_nfa [true] = 2.
+  Example foliance_duplicated_loop_dra_word :
+    dra_word foliance_duplicated_loop_nfa [true] = 2.
   Proof. reflexivity. Qed.
-End ReachAmbiguityDranceExamples.
+End ReachAmbiguityFolianceExamples.
