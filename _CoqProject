@@ -14,8 +14,8 @@ theories/Automata/EpsilonNFA.v
 theories/Regex/RegexSSS.v
 theories/Grammar/RightLinearGrammar.v
 theories/Section4/Section4LR.v
-theories/Regex/ReachAmbiguityDrance.v
-theories/Regex/Algorithm2Drance.v
+theories/Regex/ReachAmbiguityFoliance.v
+theories/Regex/Algorithm2Foliance.v
 theories/Section4/Section4Examples.v
 theories/Section4/Section4PaperOrder.v
 theories/Demos/PaperExamples.v
