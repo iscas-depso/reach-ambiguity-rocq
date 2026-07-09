@@ -3,7 +3,7 @@ Import ListNotations.
 
 From PositionAutomata.Core Require Import Syntax.
 From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
-From PositionAutomata.Regex Require Import ReachAmbiguityDrance.
+From PositionAutomata.Regex Require Import ReachAmbiguityFoliance.
 
 (** Paper-aligned examples.
 
@@ -93,7 +93,7 @@ Definition paper_example1_attack_2 : list paper_symbol :=
   repeat_symbol 2 byte_x.
 
 Definition paper_example1_nfa_4 : @finite_nfa paper_symbol :=
-  regex_drance_nfa
+  regex_foliance_nfa
     paper_alphabet
     paper_label_matches
     paper_example1_regex_4.
@@ -110,13 +110,13 @@ Example paper_example1_attack_2_eta_prefix_max :
   eta_prefix_max paper_example1_nfa_4 paper_example1_attack_2 = 6.
 Proof. vm_compute. reflexivity. Qed.
 
-Example paper_example1_attack_2_is_6_drance :
-  k_dranceb paper_example1_nfa_4 6 paper_example1_attack_2 = true.
+Example paper_example1_attack_2_is_6_foliance :
+  k_folianceb paper_example1_nfa_4 6 paper_example1_attack_2 = true.
 Proof. vm_compute. reflexivity. Qed.
 
 Example paper_example1_attack_2_sound_witness :
-  k_drance paper_example1_nfa_4 6 paper_example1_attack_2.
+  k_foliance paper_example1_nfa_4 6 paper_example1_attack_2.
 Proof.
-  apply k_dranceb_correct.
+  apply k_folianceb_correct.
   vm_compute. reflexivity.
 Qed.
