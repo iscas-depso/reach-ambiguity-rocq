@@ -440,6 +440,16 @@ Section Algorithm2PaperLayer.
       (a : A) : list (enfa_state (fenfa_base m)) :=
     algorithm2_reach_set m (w ++ [a]).
 
+  (** Exact size of a full finitely branching search tree.  The root counts
+      as one node; a node at positive depth has [branching] subtrees. *)
+  Fixpoint algorithm2_full_tree_nodes
+      (branching depth : nat) : nat :=
+    match depth with
+    | O => 1
+    | S depth' =>
+        1 + branching * algorithm2_full_tree_nodes branching depth'
+    end.
+
   Fixpoint algorithm2_search_space
       (alphabet : list A)
       (fuel : nat)
@@ -453,6 +463,67 @@ Section Algorithm2PaperLayer.
              (fun a => algorithm2_search_space alphabet fuel' (w ++ [a]))
              alphabet)
     end.
+
+  (** [algorithm2_search_space] is a finite tree of exactly the size above.
+      In particular, [fuel] bounds every root-to-leaf path. *)
+  Theorem algorithm2_search_space_size :
+    forall alphabet fuel w,
+      length (algorithm2_search_space alphabet fuel w) =
+      algorithm2_full_tree_nodes (length alphabet) fuel.
+  Proof.
+    intros alphabet fuel.
+    induction fuel as [| fuel IH]; intros w; simpl.
+    - reflexivity.
+    - f_equal.
+      assert (Hchildren :
+        forall choices,
+          length
+            (concat
+               (map
+                  (fun a =>
+                     algorithm2_search_space alphabet fuel (w ++ [a]))
+                  choices)) =
+          length choices *
+            algorithm2_full_tree_nodes (length alphabet) fuel).
+      {
+        induction choices as [| a choices IHchoices]; simpl.
+        - reflexivity.
+        - rewrite length_app, IH, IHchoices. lia.
+      }
+      apply Hchildren.
+  Qed.
+
+  Lemma algorithm2_full_tree_nodes_pow_bound :
+    forall branching depth,
+      algorithm2_full_tree_nodes branching depth <=
+      Nat.pow (S branching) (S depth).
+  Proof.
+    intros branching depth.
+    induction depth as [| depth IH]; simpl.
+    - lia.
+    - assert (Hpow_nonzero :
+        Nat.pow (S branching) (S depth) <> 0).
+      { apply Nat.pow_nonzero. lia. }
+      assert (Hpow_positive :
+        0 < Nat.pow (S branching) (S depth)) by lia.
+      pose proof
+        (Nat.mul_le_mono_l _ _ branching IH) as Hmul.
+      change
+        (1 + branching * algorithm2_full_tree_nodes branching depth <=
+         S branching * Nat.pow (S branching) (S depth)).
+      rewrite Nat.mul_succ_l.
+      lia.
+  Qed.
+
+  Corollary algorithm2_search_space_pow_bound :
+    forall alphabet fuel w,
+      length (algorithm2_search_space alphabet fuel w) <=
+      Nat.pow (S (length alphabet)) (S fuel).
+  Proof.
+    intros alphabet fuel w.
+    rewrite algorithm2_search_space_size.
+    apply algorithm2_full_tree_nodes_pow_bound.
+  Qed.
 
   Definition algorithm2_search_children_space
       (alphabet : list A)
@@ -505,6 +576,19 @@ Section Algorithm2PaperLayer.
     | None :: xs' => algorithm2_first_some xs'
     end.
 
+  (** Termination certificate for the paper's depth-first [SearchPref].
+
+      The recursive argument is [fuel].  Every recursive call is made only in
+      the [S fuel'] branch and receives [fuel']; the map ranges over the finite
+      list [fenfa_alphabet count_m].  The top-level wrapper below supplies
+      [fuel := k], which is complete because every admissible witness has
+      length at most [k].
+
+      This search fuel is distinct from the trace-enumeration fuel used by
+      [traces_from_fuel].  The latter is instantiated with
+      [enfa_trace_bound m w]; its sufficiency for epsilon-simple traces is
+      proved by [epsilon_simple_valid_trace_length_bound] and
+      [section4_enfa_prime_trace_enumerated_from_single_start]. *)
   Fixpoint algorithm2_search_pref_dfs
       (count_m reject_m : @finite_enfa A)
       (k fuel : nat)
@@ -1249,6 +1333,101 @@ Section Algorithm2PaperLayer.
       exists w. exact H.
   Qed.
 
+  (** Total-correctness interfaces.  Rocq's acceptance of the structurally
+      recursive definitions supplies termination; these theorems combine that
+      totality with the already proved soundness and completeness properties.
+      Thus [None] is a proved negative answer, not fuel exhaustion. *)
+  Theorem algorithm2_search_msss_foliance_against_total_correct :
+    forall (count_m reject_m : @finite_enfa A) k,
+      match
+        algorithm2_search_msss_foliance_against count_m reject_m k
+      with
+      | Some w =>
+          algorithm2_msss_foliance_against count_m reject_m k w
+      | None =>
+          ~ algorithm2_msss_has_foliance_against count_m reject_m k
+      end.
+  Proof.
+    intros count_m reject_m k.
+    destruct
+      (algorithm2_search_msss_foliance_against count_m reject_m k)
+      as [w |] eqn:Hsearch.
+    - now apply algorithm2_search_msss_foliance_against_sound in Hsearch.
+    - intros Hhas.
+      destruct
+        (algorithm2_search_msss_foliance_against_complete
+           count_m reject_m k Hhas)
+        as [w [Hsome _]].
+      rewrite Hsearch in Hsome. discriminate.
+  Qed.
+
+  Theorem algorithm2_search_msss_foliance_pref_against_dfs_total_correct :
+    forall (count_m reject_m : @finite_enfa A) k,
+      match
+        algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k
+      with
+      | Some w =>
+          algorithm2_msss_foliance_pref_against count_m reject_m k w
+      | None =>
+          ~ algorithm2_msss_has_foliance_pref_against
+              count_m reject_m k
+      end.
+  Proof.
+    intros count_m reject_m k.
+    destruct
+      (algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k)
+      as [w |] eqn:Hsearch.
+    - now apply
+        algorithm2_search_msss_foliance_pref_against_dfs_sound in Hsearch.
+    - intros Hhas.
+      destruct
+        (algorithm2_search_msss_foliance_pref_against_dfs_complete
+           count_m reject_m k Hhas)
+        as [w [Hsome _]].
+      rewrite Hsearch in Hsome. discriminate.
+  Qed.
+
+  Corollary algorithm2_search_msss_foliance_against_none_iff :
+    forall (count_m reject_m : @finite_enfa A) k,
+      algorithm2_search_msss_foliance_against count_m reject_m k = None <->
+      ~ algorithm2_msss_has_foliance_against count_m reject_m k.
+  Proof.
+    intros count_m reject_m k. split.
+    - intros Hnone.
+      pose proof
+        (algorithm2_search_msss_foliance_against_total_correct
+           count_m reject_m k) as Htotal.
+      now rewrite Hnone in Htotal.
+    - intros Hnone.
+      destruct
+        (algorithm2_search_msss_foliance_against count_m reject_m k)
+        as [w |] eqn:Hsearch; auto.
+      exfalso. apply Hnone. exists w.
+      now apply algorithm2_search_msss_foliance_against_sound in Hsearch.
+  Qed.
+
+  Corollary algorithm2_search_msss_foliance_pref_against_dfs_none_iff :
+    forall (count_m reject_m : @finite_enfa A) k,
+      algorithm2_search_msss_foliance_pref_against_dfs count_m reject_m k =
+        None <->
+      ~ algorithm2_msss_has_foliance_pref_against count_m reject_m k.
+  Proof.
+    intros count_m reject_m k. split.
+    - intros Hnone.
+      pose proof
+        (algorithm2_search_msss_foliance_pref_against_dfs_total_correct
+           count_m reject_m k) as Htotal.
+      now rewrite Hnone in Htotal.
+    - intros Hnone.
+      destruct
+        (algorithm2_search_msss_foliance_pref_against_dfs
+           count_m reject_m k)
+        as [w |] eqn:Hsearch; auto.
+      exfalso. apply Hnone. exists w.
+      now apply
+        algorithm2_search_msss_foliance_pref_against_dfs_sound in Hsearch.
+  Qed.
+
   Theorem algorithm2_decide_msss_correct :
     forall (m : @finite_enfa A) k,
       algorithm2_decide_msss_foliance m k = true <->
@@ -1476,6 +1655,14 @@ Section Algorithm2FolianceExamples.
       foliance_ambiguous_a
       2 =
     Some [true; true].
+  Proof. reflexivity. Qed.
+
+  Example algorithm2_search_space_fuel_zero :
+    algorithm2_search_space [true; false] 0 [true] = [[true]].
+  Proof. reflexivity. Qed.
+
+  Example algorithm2_full_tree_nodes_binary_depth_two :
+    algorithm2_full_tree_nodes 2 2 = 7.
   Proof. reflexivity. Qed.
 
   Example algorithm2_search_foliance_ambiguous_a_solver :
