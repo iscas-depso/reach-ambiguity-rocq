@@ -1,7 +1,7 @@
 From Stdlib Require Import List Bool Arith Lia.
 Import ListNotations.
 
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 From PositionAutomata.Core Require Import GraphAlgorithms.
 
 (** Weber-Seidl style ambiguity witnesses.

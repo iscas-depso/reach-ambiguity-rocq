@@ -1,0 +1,13 @@
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+.latex-out/
+AGENTS.md
+CLAUDE.md
+.claude
+CREW_PRAM_AC1_NC2_proof_zh.md

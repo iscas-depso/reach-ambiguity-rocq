@@ -3,7 +3,7 @@ Import ListNotations.
 
 From PositionAutomata.Core Require Import Syntax.
 From PositionAutomata.Automata Require Import PositionAutomaton PositionCorrectness.
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity DegreeofInfiniteAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity InfiniteAmbiguity.
 
 (** ReDoS-oriented interface for regular expressions.
 

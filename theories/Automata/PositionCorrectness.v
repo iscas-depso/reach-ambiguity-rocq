@@ -4,7 +4,7 @@ Import ListNotations.
 From PositionAutomata.Core Require Import Sets Syntax.
 From PositionAutomata.Automata Require Import PositionAutomaton.
 From PositionAutomata.Regex Require Import KleeneSemantics.
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 
 Section PositionCorrectness.
   Context {A : Type}.

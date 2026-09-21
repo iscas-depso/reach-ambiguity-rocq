@@ -1,7 +1,7 @@
 From Stdlib Require Import List Bool Arith Lia.
 Import ListNotations.
 
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 
 (** Section 4, Definitions 4--6: epsilon NFAs and the three
     ambiguity measures.
@@ -522,7 +522,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_leafufa_iff_biufa :
+  Theorem reach_ambiguity_leafufa_iff_biufa :
     forall (m : finite_enfa),
       enfa_LeafUFA m <-> enfa_BiUFA m.
   Proof.
@@ -542,6 +542,14 @@ Section EpsilonNFA.
       (q : enfa_state (fenfa_base m)) : Prop :=
     exists w,
       0 < enfa_dra_prime_at m w q.
+
+  (** Determinism of the accessible portion.  Unlike [enfa_deterministic],
+      this deliberately ignores representation states that cannot occur in a
+      computation from an initial state. *)
+  Definition enfa_accessibly_deterministic (m : finite_enfa) : Prop :=
+    forall q a,
+      enfa_accessible m q ->
+      length (enfa_step (fenfa_base m) q (Some a)) <= 1.
 
   Definition enfa_coaccessible
       (m : finite_enfa)
@@ -667,7 +675,6 @@ Section EpsilonNFA.
 
   Definition enfa_epsilon_closure_branching_deterministic
       (m : finite_enfa) : Prop :=
-    enfa_LeafUFA m /\
     enfa_fresh_epsilon_branching_le_one m /\
     enfa_epsilon_closure_symbol_branching_le_one m /\
     enfa_maximal_epsilon_closure_trace_unique m.
@@ -726,7 +733,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 3. I. *)
-  Theorem section4_theorem3_epsilon_free_leaf_sum_dra :
+  Theorem reach_ambiguity_epsilon_free_leaf_sum_dra :
     forall (m : finite_enfa) w,
       enfa_leaf_word m w =
       sum_nats (map (enfa_dra_at m w) (fenfa_states m)).
@@ -735,7 +742,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 3. II. *)
-  Theorem section4_theorem3_prime_leaf_le_sum_dra :
+  Theorem reach_ambiguity_prime_leaf_le_sum_dra :
     forall (m : finite_enfa) w,
       enfa_leaf_prime_word m w <=
       sum_nats (map (enfa_dra_prime_at m w) (fenfa_states m)).
@@ -870,7 +877,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Lemma 1. dra *)
-  Theorem section4_lemma1_dra :
+  Theorem reach_ambiguity_dra :
     forall (m : finite_enfa) w q,
       enfa_epsilon_free m ->
       enfa_dra_at m w q = enfa_dra_prime_at m w q.
@@ -885,7 +892,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Lemma 1. da *)
-  Theorem section4_lemma1_da :
+  Theorem reach_ambiguity_da :
     forall (m : finite_enfa) w,
       enfa_epsilon_free m ->
       enfa_da_word m w = enfa_da_prime_word m w.
@@ -894,7 +901,7 @@ Section EpsilonNFA.
     unfold enfa_da_word, enfa_da_prime_word.
     induction (enfa_final_states m) as [| q qs IH]; simpl.
     - reflexivity.
-    - rewrite section4_lemma1_dra by exact Heps.
+    - rewrite reach_ambiguity_dra by exact Heps.
       rewrite IH.
       + unfold enfa_accepting_maximal_simple_reach_count, enfa_dra_prime_at.
         f_equal.
@@ -906,7 +913,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Lemma 1. leaf *)
-  Theorem section4_lemma1_leaf :
+  Theorem reach_ambiguity_leaf :
     forall (m : finite_enfa) w,
       enfa_epsilon_free m ->
       enfa_leaf_word m w = enfa_leaf_prime_word m w.
@@ -915,7 +922,7 @@ Section EpsilonNFA.
     unfold enfa_leaf_word, enfa_leaf_prime_word.
     induction (fenfa_states m) as [| q qs IH]; simpl.
     - reflexivity.
-    - rewrite section4_lemma1_dra by exact Heps.
+    - rewrite reach_ambiguity_dra by exact Heps.
       rewrite IH.
       + unfold enfa_maximal_simple_reach_count, enfa_dra_prime_at.
         f_equal.
@@ -936,7 +943,7 @@ Section EpsilonNFA.
     - destruct (p x); simpl; lia.
   Qed.
 
-  Theorem section4_theorem2_leafufa_implies_ufa_under_accepting_maximal_da_leaf_bound :
+  Theorem reach_ambiguity_leafufa_implies_ufa_under_accepting_maximal_da_leaf_bound :
     forall (m : finite_enfa),
       enfa_accepting_maximal_da_bounded_by_leaf m ->
       enfa_LeafUFA m -> enfa_UFA m.
@@ -947,7 +954,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_theorem2_leafufa_implies_maximal_reachufa :
+  Theorem reach_ambiguity_leafufa_implies_maximal_reachufa :
     forall (m : finite_enfa),
       enfa_LeafUFA m -> enfa_MaximalReachUFA m.
   Proof.
@@ -963,7 +970,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_lemma2_maximal_reachufa_leaf_bound :
+  Theorem reach_ambiguity_maximal_reachufa_leaf_bound :
     forall (m : finite_enfa) w,
       enfa_MaximalReachUFA m ->
       enfa_leaf_prime_word m w <= length (fenfa_states m).
@@ -981,13 +988,13 @@ Section EpsilonNFA.
   Qed.
 
   (* Lemma 2. *)
-  Theorem section4_lemma2_reachufa_leaf_bound :
+  Theorem reach_ambiguity_reachufa_leaf_bound :
     forall (m : finite_enfa) w,
       enfa_ReachUFA m ->
       enfa_leaf_prime_word m w <= length (fenfa_states m).
   Proof.
     intros m w Hreach.
-    apply section4_lemma2_maximal_reachufa_leaf_bound.
+    apply reach_ambiguity_maximal_reachufa_leaf_bound.
     intros u q Hq.
     pose proof (enfa_maximal_simple_reach_le_dra_prime m u q) as Hle.
     pose proof (Hreach u q Hq) as Hreach_q.
@@ -1009,7 +1016,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 2 *)
-  Theorem section4_theorem2_trim_extendable_ufa_implies_reachufa :
+  Theorem reach_ambiguity_trim_extendable_ufa_implies_reachufa :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_trim m ->
@@ -1023,7 +1030,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_theorem2_epsilon_free_trim_extendable_ufa_implies_reachufa :
+  Theorem reach_ambiguity_epsilon_free_trim_extendable_ufa_implies_reachufa :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -1033,7 +1040,7 @@ Section EpsilonNFA.
       enfa_ReachUFA m.
   Proof.
     intros m _ Hwf Htrim Hextend Hufa.
-    eapply section4_theorem2_trim_extendable_ufa_implies_reachufa; eauto.
+    eapply reach_ambiguity_trim_extendable_ufa_implies_reachufa; eauto.
   Qed.
 
   Lemma length_filter_pos_In :
@@ -2548,7 +2555,7 @@ Section EpsilonNFA.
   Definition enfa_started_traces_nodup (m : finite_enfa) : Prop :=
     forall w, NoDup (started_traces m w).
 
-  Theorem section4_enfa_started_traces_nodup_single_start :
+  Theorem reach_ambiguity_enfa_started_traces_nodup_single_start :
     forall (m : finite_enfa) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2614,7 +2621,7 @@ Section EpsilonNFA.
       epsilon_simpleb m (s, t) = true ->
       In (s, t) (started_traces m w).
 
-  Theorem section4_enfa_prime_trace_enumerated_from_single_start :
+  Theorem reach_ambiguity_enfa_prime_trace_enumerated_from_single_start :
     forall (m : finite_enfa) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -3379,7 +3386,7 @@ Section EpsilonNFA.
       lia.
   Qed.
 
-  Theorem section4_enfa_accepting_maximal_da_bounded_by_leaf_under_extension_injective :
+  Theorem reach_ambiguity_enfa_accepting_maximal_da_bounded_by_leaf_under_extension_injective :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_accepting_maximal_extension_injective m ->
@@ -3480,7 +3487,7 @@ Section EpsilonNFA.
     discriminate.
   Qed.
 
-  Theorem section4_enfa_accepting_maximal_extension_injective :
+  Theorem reach_ambiguity_enfa_accepting_maximal_extension_injective :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_accepting_maximal_extension_injective m.
@@ -3569,19 +3576,19 @@ Section EpsilonNFA.
         discriminate.
   Qed.
 
-  Theorem section4_enfa_accepting_maximal_da_bounded_by_leaf :
+  Theorem reach_ambiguity_enfa_accepting_maximal_da_bounded_by_leaf :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_accepting_maximal_da_bounded_by_leaf m.
   Proof.
     intros m Hwf.
     eapply
-      section4_enfa_accepting_maximal_da_bounded_by_leaf_under_extension_injective.
+      reach_ambiguity_enfa_accepting_maximal_da_bounded_by_leaf_under_extension_injective.
     - exact Hwf.
-    - now apply section4_enfa_accepting_maximal_extension_injective.
+    - now apply reach_ambiguity_enfa_accepting_maximal_extension_injective.
   Qed.
 
-  Theorem section4_theorem2_leafufa_implies_ufa :
+  Theorem reach_ambiguity_leafufa_implies_ufa :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_LeafUFA m ->
@@ -3589,8 +3596,8 @@ Section EpsilonNFA.
   Proof.
     intros m Hwf Hleaf.
     eapply
-      section4_theorem2_leafufa_implies_ufa_under_accepting_maximal_da_leaf_bound.
-    - now apply section4_enfa_accepting_maximal_da_bounded_by_leaf.
+      reach_ambiguity_leafufa_implies_ufa_under_accepting_maximal_da_leaf_bound.
+    - now apply reach_ambiguity_enfa_accepting_maximal_da_bounded_by_leaf.
     - exact Hleaf.
   Qed.
 
@@ -3808,7 +3815,7 @@ Section EpsilonNFA.
     eapply Hinj; eauto.
   Qed.
 
-  Theorem section4_theorem2_leafufa_implies_ufa_under_started_traces_nodup_and_accepting_maximal_extension_injective :
+  Theorem reach_ambiguity_leafufa_implies_ufa_under_started_traces_nodup_and_accepting_maximal_extension_injective :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_started_traces_nodup m ->
@@ -3964,6 +3971,78 @@ Section EpsilonNFA.
           -- simpl in Hstep_len. lia.
   Qed.
 
+  Lemma enfa_singleton_start_accessible_epsilon_free :
+    forall (m : finite_enfa) s,
+      enfa_epsilon_free m ->
+      enfa_start (fenfa_base m) = [s] ->
+      enfa_accessible m s.
+  Proof.
+    intros m s Heps Hstart.
+    exists [].
+    unfold enfa_dra_prime_at, started_traces.
+    rewrite Hstart. simpl.
+    unfold enfa_trace_bound. simpl.
+    rewrite Heps. simpl.
+    unfold ends_inb, started_end. simpl.
+    rewrite (fenfa_state_eqb_complete m s s eq_refl). simpl.
+    lia.
+  Qed.
+
+  Lemma enfa_accessible_symbol_successor_epsilon_free :
+    forall (m : finite_enfa) p a q,
+      enfa_epsilon_free m ->
+      enfa_accessible m p ->
+      In q (enfa_step (fenfa_base m) p (Some a)) ->
+      enfa_accessible m q.
+  Proof.
+    intros m p a q Heps [w Hreach] Hstep.
+    exists (w ++ [a]).
+    eapply (enfa_dra_prime_step_positive_epsilon_free m w p a q).
+    - exact Heps.
+    - exact Hreach.
+    - exact Hstep.
+  Qed.
+
+  Lemma traces_from_fuel_epsilon_free_accessibly_deterministic_le_one :
+    forall (m : finite_enfa) fuel p w,
+      enfa_epsilon_free m ->
+      enfa_accessibly_deterministic m ->
+      enfa_accessible m p ->
+      length (traces_from_fuel m fuel p w) <= 1.
+  Proof.
+    intros m fuel.
+    induction fuel as [| fuel IH]; intros p w Heps Hdet Hp.
+    - destruct w; simpl; lia.
+    - simpl.
+      destruct w as [| a w].
+      + rewrite Heps. simpl. lia.
+      + rewrite Heps. simpl.
+        pose proof (Hdet p a Hp) as Hstep_len.
+        destruct (enfa_step (fenfa_base m) p (Some a)) as [| q qs]
+          eqn:Hstep.
+        * simpl. lia.
+        * destruct qs as [| r rs].
+          -- simpl. rewrite app_nil_r. rewrite length_map.
+             apply IH; auto.
+             eapply enfa_accessible_symbol_successor_epsilon_free; eauto.
+             rewrite Hstep. simpl. auto.
+          -- simpl in Hstep_len. lia.
+  Qed.
+
+  Lemma started_traces_epsilon_free_accessibly_deterministic_singleton_start_le_one :
+    forall (m : finite_enfa) s w,
+      enfa_epsilon_free m ->
+      enfa_start (fenfa_base m) = [s] ->
+      enfa_accessibly_deterministic m ->
+      length (started_traces m w) <= 1.
+  Proof.
+    intros m s w Heps Hstart Hdet.
+    unfold started_traces. rewrite Hstart. simpl. rewrite app_nil_r.
+    rewrite length_map.
+    eapply traces_from_fuel_epsilon_free_accessibly_deterministic_le_one;
+      eauto using enfa_singleton_start_accessible_epsilon_free.
+  Qed.
+
   Lemma started_traces_epsilon_free_deterministic_single_start_le_one :
     forall (m : finite_enfa) w,
       finite_enfa_wf m ->
@@ -3983,6 +4062,18 @@ Section EpsilonNFA.
         rewrite Hstarts. simpl. auto.
       + exfalso. unfold enfa_single_start in Hsingle.
         rewrite Hstarts in Hsingle. simpl in Hsingle. lia.
+  Qed.
+
+  Lemma started_traces_single_start_empty :
+    forall (m : finite_enfa) s w,
+      enfa_start (fenfa_base m) = [s] ->
+      traces_from_fuel m (enfa_trace_bound m w) s w = [] ->
+      started_traces m w = [].
+  Proof.
+    intros m s w Hstart Htraces.
+    unfold started_traces.
+    rewrite Hstart. simpl.
+    now rewrite Htraces.
   Qed.
 
   Lemma leaf_prime_no_started_traces :
@@ -4123,7 +4214,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 1. I. *)
-  Theorem section4_theorem1_epsilon_free_deterministic_leafufa :
+  Theorem reach_ambiguity_epsilon_free_deterministic_leafufa :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4136,7 +4227,7 @@ Section EpsilonNFA.
     now apply started_traces_epsilon_free_deterministic_single_start_le_one.
   Qed.
 
-  Theorem section4_dfa_conditions_implies_reachufa :
+  Theorem reach_ambiguity_dfa_conditions_implies_reachufa :
     forall (m : finite_enfa),
       enfa_DFA_conditions m ->
       enfa_ReachUFA m.
@@ -4149,7 +4240,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_dfa_conditions_implies_ufa_reachufa_leafufa :
+  Theorem reach_ambiguity_dfa_conditions_implies_ufa_reachufa_leafufa :
     forall (m : finite_enfa),
       enfa_DFA_conditions m ->
       enfa_UFA m /\ enfa_ReachUFA m /\ enfa_LeafUFA m.
@@ -4157,18 +4248,133 @@ Section EpsilonNFA.
     intros m [Heps [Hwf [Hsingle Hdet]]].
     assert (Hleaf : enfa_LeafUFA m).
     {
-      eapply section4_theorem1_epsilon_free_deterministic_leafufa; eauto.
+      eapply reach_ambiguity_epsilon_free_deterministic_leafufa; eauto.
     }
     assert (Hreach : enfa_ReachUFA m).
     {
-      apply section4_dfa_conditions_implies_reachufa.
+      apply reach_ambiguity_dfa_conditions_implies_reachufa.
       exact (conj Heps (conj Hwf (conj Hsingle Hdet))).
     }
     repeat split; auto.
-    now eapply section4_theorem2_leafufa_implies_ufa.
+    now eapply reach_ambiguity_leafufa_implies_ufa.
   Qed.
 
-  Theorem section4_theorem1_epsilon_free_leafufa_deterministic_trim :
+  Theorem reach_ambiguity_epsilon_free_leafufa_accessibly_deterministic :
+    forall (m : finite_enfa),
+      enfa_epsilon_free m ->
+      finite_enfa_wf m ->
+      enfa_LeafUFA m ->
+      enfa_accessibly_deterministic m.
+  Proof.
+    intros m Heps Hwf Hleaf q a [w Hreach].
+    destruct (enfa_step (fenfa_base m) q (Some a)) as [| q1 qs]
+      eqn:Hstep.
+    - simpl. lia.
+    - destruct qs as [| q2 qs].
+      + simpl. lia.
+      + exfalso.
+        assert (Hpos1 : 0 < enfa_dra_prime_at m (w ++ [a]) q1).
+        {
+          eapply enfa_dra_prime_step_positive_epsilon_free; eauto.
+          rewrite Hstep. simpl. auto.
+        }
+        assert (Hpos2 : 0 < enfa_dra_prime_at m (w ++ [a]) q2).
+        {
+          eapply enfa_dra_prime_step_positive_epsilon_free; eauto.
+          rewrite Hstep. simpl. auto.
+        }
+        assert (Hq : In q (fenfa_states m)).
+        {
+          unfold enfa_dra_prime_at in Hreach.
+          apply length_filter_pos_In in Hreach as [[s t] [Hin Hfilter]].
+          apply andb_true_iff in Hfilter as [Hend _].
+          unfold ends_inb in Hend.
+          apply fenfa_state_eqb_sound in Hend.
+          subst q.
+          destruct (started_traces_valid m w s t Hin) as [Hvalid _].
+          eapply finite_enfa_wf_valid_trace_end_in_states; eauto.
+          eapply fenfa_starts_in_states; eauto.
+          eapply started_traces_start_in; eauto.
+        }
+        assert (Hq1 : In q1 (fenfa_states m)).
+        {
+          eapply fenfa_steps_in_states.
+          - exact Hwf.
+          - exact Hq.
+          - rewrite Hstep. simpl. auto.
+        }
+        assert (Hq2 : In q2 (fenfa_states m)).
+        {
+          eapply fenfa_steps_in_states.
+          - exact Hwf.
+          - exact Hq.
+          - rewrite Hstep. simpl. auto.
+        }
+        assert (Hneq : q1 <> q2).
+        {
+          pose proof (fenfa_step_targets_nodup m Hwf q (Some a) Hq)
+            as Hnodup_step.
+          rewrite Hstep in Hnodup_step.
+          inversion Hnodup_step as [| x xs Hnotin _]; subst.
+          intro Heq. subst q2. apply Hnotin. simpl. auto.
+        }
+        assert (Hmax1 :
+          0 < enfa_maximal_simple_reach_count m (w ++ [a]) q1).
+        {
+          rewrite enfa_maximal_simple_reach_epsilon_free by exact Heps.
+          exact Hpos1.
+        }
+        assert (Hmax2 :
+          0 < enfa_maximal_simple_reach_count m (w ++ [a]) q2).
+        {
+          rewrite enfa_maximal_simple_reach_epsilon_free by exact Heps.
+          exact Hpos2.
+        }
+        pose proof (Hleaf (w ++ [a])) as Hleaf_w.
+        unfold enfa_leaf_prime_word in Hleaf_w.
+        pose proof
+          (sum_map_two_pos_lower
+             (enfa_maximal_simple_reach_count m (w ++ [a]))
+             (fenfa_states m) q1 q2
+             (fenfa_states_nodup m Hwf)
+             Hq1 Hq2 Hneq Hmax1 Hmax2) as Htwo.
+        lia.
+  Qed.
+
+  Theorem reach_ambiguity_epsilon_free_accessibly_deterministic_leafufa :
+    forall (m : finite_enfa) s,
+      finite_enfa_wf m ->
+      enfa_epsilon_free m ->
+      enfa_start (fenfa_base m) = [s] ->
+      enfa_accessibly_deterministic m ->
+      enfa_LeafUFA m.
+  Proof.
+    intros m s Hwf Heps Hstart Hdet w.
+    apply leaf_prime_started_traces_le_one; auto.
+    eapply
+      started_traces_epsilon_free_accessibly_deterministic_singleton_start_le_one;
+      eauto.
+  Qed.
+
+  Theorem reach_ambiguity_epsilon_free_leafufa_iff_accessibly_deterministic :
+    forall (m : finite_enfa) s,
+      finite_enfa_wf m ->
+      enfa_epsilon_free m ->
+      enfa_start (fenfa_base m) = [s] ->
+      (enfa_LeafUFA m <-> enfa_accessibly_deterministic m).
+  Proof.
+    intros m s Hwf Heps Hstart. split.
+    - intro Hleaf.
+      exact
+        (reach_ambiguity_epsilon_free_leafufa_accessibly_deterministic
+           m Heps Hwf Hleaf).
+    - intro Hdet.
+      exact
+        (reach_ambiguity_epsilon_free_accessibly_deterministic_leafufa
+           m s Hwf Heps Hstart Hdet).
+  Qed.
+
+  Theorem reach_ambiguity_epsilon_free_leafufa_deterministic_trim :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4237,7 +4443,7 @@ Section EpsilonNFA.
         lia.
   Qed.
 
-  Theorem section4_theorem1_epsilon_free_leafufa_deterministic_trim_single_start :
+  Theorem reach_ambiguity_epsilon_free_leafufa_deterministic_trim_single_start :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4246,15 +4452,15 @@ Section EpsilonNFA.
       (enfa_LeafUFA m <-> enfa_deterministic m).
   Proof.
     intros m Heps Hwf Htrim Hsingle. split.
-    - now apply section4_theorem1_epsilon_free_leafufa_deterministic_trim.
-    - now apply section4_theorem1_epsilon_free_deterministic_leafufa.
+    - now apply reach_ambiguity_epsilon_free_leafufa_deterministic_trim.
+    - now apply reach_ambiguity_epsilon_free_deterministic_leafufa.
   Qed.
 
   (* Theorem 1. II.
      This is the maximal-trace form of epsilon removal: unlike the classical
      epsilon-closure target list, it counts only maximal epsilon-simple lifted
      computations, matching Leaf'. *)
-  Theorem section4_theorem1_leafufa_maximal_epsilon_removal_deterministic :
+  Theorem reach_ambiguity_leafufa_maximal_epsilon_removal_deterministic :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_single_start m ->
@@ -4275,7 +4481,7 @@ Section EpsilonNFA.
 
      The statement combines the numeric LeafUFA condition with trace-level
      closure branching clauses for maximal epsilon-simple traces. *)
-  Theorem section4_theorem1_leafufa_implies_epsilon_closure_branching :
+  Theorem reach_ambiguity_leafufa_implies_epsilon_closure_branching :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_single_start m ->
@@ -4284,7 +4490,6 @@ Section EpsilonNFA.
   Proof.
     intros m Hwf Hsingle Hleaf.
     repeat split.
-    - exact Hleaf.
     - unfold enfa_fresh_epsilon_branching_le_one.
       intros st st1 st2 _ Hext1 Hext2.
       unfold enfa_maximal_epsilon_closure_extension,
@@ -4297,25 +4502,201 @@ Section EpsilonNFA.
         with (w := started_word st); eauto.
     - unfold enfa_epsilon_closure_symbol_branching_le_one.
       intros st a st1 st2 Hpre Hext1 Hext2.
-      eapply section4_theorem1_leafufa_maximal_epsilon_removal_deterministic;
+      eapply reach_ambiguity_leafufa_maximal_epsilon_removal_deterministic;
         eauto.
     - unfold enfa_maximal_epsilon_closure_trace_unique.
       intros w st1 st2 Hin1 Hin2 Heps1 Hmax1 Heps2 Hmax2.
       eapply leaf_prime_maximal_started_trace_unique; eauto.
   Qed.
 
-  Theorem section4_theorem1_epsilon_closure_branching_implies_leafufa :
+  Lemma started_traces_single_start_le_NoDup :
+    forall (m : finite_enfa) w,
+      finite_enfa_wf m ->
+      enfa_single_start m ->
+      NoDup (started_traces m w).
+  Proof.
+    intros m w Hwf Hsingle.
+    unfold started_traces.
+    destruct (enfa_start (fenfa_base m)) as [| s starts] eqn:Hstarts.
+    - simpl. constructor.
+    - destruct starts as [| s' starts].
+      + simpl. rewrite app_nil_r.
+        apply NoDup_map_injective_in.
+        * intros t1 t2 _ _ Heq. inversion Heq. reflexivity.
+        * apply traces_from_fuel_NoDup; auto.
+          eapply fenfa_starts_in_states; eauto.
+          rewrite Hstarts. simpl. auto.
+      + unfold enfa_single_start in Hsingle.
+        rewrite Hstarts in Hsingle. simpl in Hsingle. lia.
+  Qed.
+
+  Lemma NoDup_unique_length_le_one :
+    forall {B : Type} (xs : list B),
+      NoDup xs ->
+      (forall x y, In x xs -> In y xs -> x = y) ->
+      length xs <= 1.
+  Proof.
+    intros B xs Hnodup Hunique.
+    destruct xs as [| x xs].
+    - simpl. lia.
+    - destruct xs as [| y ys].
+      + simpl. lia.
+      + inversion Hnodup as [| ? ? Hnotin _]; subst.
+        exfalso.
+        assert (x = y) as Heq.
+        { apply Hunique; simpl; auto. }
+        subst y. apply Hnotin. simpl. auto.
+  Qed.
+
+  Lemma enfa_same_endpoint_maximal_extension_injective :
+    forall (m : finite_enfa) w st1 st2,
+      finite_enfa_wf m ->
+      In st1 (started_traces m w) ->
+      In st2 (started_traces m w) ->
+      epsilon_simpleb m st1 = true ->
+      epsilon_simpleb m st2 = true ->
+      started_end st1 = started_end st2 ->
+      enfa_extend_to_maximal_epsilon_started m st1 =
+      enfa_extend_to_maximal_epsilon_started m st2 ->
+      st1 = st2.
+  Proof.
+    intros m w [s1 t1] [s2 t2] Hwf Hin1 Hin2
+      Hsimple1 Hsimple2 Hend Hext.
+    destruct
+      (enfa_extend_to_maximal_epsilon_started_correct
+         m w (s1, t1) Hwf Hin1 Hsimple1)
+      as [_ [_ [u1 [Hu1 [_ [_ _]]]]]].
+    destruct
+      (enfa_extend_to_maximal_epsilon_started_correct
+         m w (s2, t2) Hwf Hin2 Hsimple2)
+      as [_ [_ [u2 [Hu2 [_ [_ _]]]]]].
+    simpl in Hu1, Hu2, Hext, Hend.
+    injection Hext as Hstart Htrace_ext.
+    subst s2.
+    rewrite Hu1 in Htrace_ext.
+    rewrite Hu2 in Htrace_ext.
+    destruct (started_traces_valid m w s1 t1 Hin1)
+      as [_ Hword1].
+    destruct (started_traces_valid m w s1 t2 Hin2)
+      as [_ Hword2].
+    destruct
+      (app_eq_prefix_cases t1 t2 u1 u2 Htrace_ext)
+      as [[v [Ht2 _]] | [v [Ht1 _]]].
+    - destruct v as [| e v].
+      + rewrite app_nil_r in Ht2. subst t2. reflexivity.
+      + pose proof
+          (enfa_dra_prime_at_traces_fiber_maximal
+             m w (trace_end s1 t1) (s1, t1)
+             Hin1
+             (fenfa_state_eqb_complete
+                m (trace_end s1 t1) (trace_end s1 t1) eq_refl)
+             Hsimple1)
+          as Hfiber.
+        assert (Hword_v : trace_word (e :: v) = []).
+        {
+          eapply trace_word_suffix_nil_of_same_word.
+          - exact Hword1.
+          - rewrite <- Ht2. exact Hword2.
+        }
+        assert (Hend2 :
+          ends_inb m (trace_end s1 t1) (s1, t2) = true).
+        {
+          unfold ends_inb, started_end. simpl.
+          apply fenfa_state_eqb_complete.
+          exact (eq_sym Hend).
+        }
+        assert (Happend :
+          (s1, t2) =
+          (fst (s1, t1), snd (s1, t1) ++ e :: v)).
+        { simpl. now rewrite Ht2. }
+        specialize
+          (Hfiber (s1, t2) (e :: v) Happend Hin2 Hend2
+             Hsimple2 Hword_v).
+        now symmetry.
+    - destruct v as [| e v].
+      + rewrite app_nil_r in Ht1. subst t1. reflexivity.
+      + pose proof
+          (enfa_dra_prime_at_traces_fiber_maximal
+             m w (trace_end s1 t2) (s1, t2)
+             Hin2
+             (fenfa_state_eqb_complete
+                m (trace_end s1 t2) (trace_end s1 t2) eq_refl)
+             Hsimple2)
+          as Hfiber.
+        assert (Hword_v : trace_word (e :: v) = []).
+        {
+          eapply trace_word_suffix_nil_of_same_word.
+          - exact Hword2.
+          - rewrite <- Ht1. exact Hword1.
+        }
+        assert (Hend1 :
+          ends_inb m (trace_end s1 t2) (s1, t1) = true).
+        {
+          unfold ends_inb, started_end. simpl.
+          apply fenfa_state_eqb_complete.
+          exact Hend.
+        }
+        assert (Happend :
+          (s1, t1) =
+          (fst (s1, t2), snd (s1, t2) ++ e :: v)).
+        { simpl. now rewrite Ht1. }
+        specialize
+          (Hfiber (s1, t1) (e :: v) Happend Hin1 Hend1
+             Hsimple1 Hword_v).
+        exact Hfiber.
+  Qed.
+
+  Theorem reach_ambiguity_epsilon_closure_branching_implies_leafufa :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_single_start m ->
       enfa_epsilon_closure_branching_deterministic m ->
       enfa_LeafUFA m.
   Proof.
-    intros m _ _ [Hleaf _].
-    exact Hleaf.
+    intros m Hwf Hsingle [_ [_ Hunique]].
+    unfold enfa_LeafUFA.
+    intro w.
+    rewrite enfa_leaf_prime_word_flat by exact Hwf.
+    apply NoDup_unique_length_le_one.
+    - apply NoDup_filter_bool.
+      now apply started_traces_single_start_le_NoDup.
+    - intros st1 st2 Hin1 Hin2.
+      apply filter_In in Hin1 as [Hstarted1 Hprime1].
+      apply filter_In in Hin2 as [Hstarted2 Hprime2].
+      unfold enfa_leaf_prime_started_traceb in Hprime1, Hprime2.
+      apply andb_true_iff in Hprime1 as [Hsimple1 Hmax1].
+      apply andb_true_iff in Hprime2 as [Hsimple2 Hmax2].
+      eapply Hunique; eauto.
   Qed.
 
-  Theorem section4_theorem1_epsilon_closure_branching_iff :
+  Theorem reach_ambiguity_leafufa_iff_maximal_trace_unique :
+    forall (m : finite_enfa),
+      finite_enfa_wf m ->
+      enfa_single_start m ->
+      (enfa_LeafUFA m <->
+       enfa_maximal_epsilon_closure_trace_unique m).
+  Proof.
+    intros m Hwf Hsingle. split.
+    - intro Hleaf.
+      pose proof
+        (reach_ambiguity_leafufa_implies_epsilon_closure_branching
+           m Hwf Hsingle Hleaf) as [_ [_ Hunique]].
+      exact Hunique.
+    - intros Hunique w.
+      rewrite enfa_leaf_prime_word_flat by exact Hwf.
+      apply NoDup_unique_length_le_one.
+      + apply NoDup_filter_bool.
+        now apply started_traces_single_start_le_NoDup.
+      + intros st1 st2 Hin1 Hin2.
+        apply filter_In in Hin1 as [Hstarted1 Hprime1].
+        apply filter_In in Hin2 as [Hstarted2 Hprime2].
+        unfold enfa_leaf_prime_started_traceb in Hprime1, Hprime2.
+        apply andb_true_iff in Hprime1 as [Hsimple1 Hmax1].
+        apply andb_true_iff in Hprime2 as [Hsimple2 Hmax2].
+        eapply Hunique; eauto.
+  Qed.
+
+  Theorem reach_ambiguity_epsilon_closure_branching_iff :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_single_start m ->
@@ -4323,8 +4704,54 @@ Section EpsilonNFA.
        enfa_epsilon_closure_branching_deterministic m).
   Proof.
     intros m Hwf Hsingle. split.
-    - now apply section4_theorem1_leafufa_implies_epsilon_closure_branching.
-    - now apply section4_theorem1_epsilon_closure_branching_implies_leafufa.
+    - now apply reach_ambiguity_leafufa_implies_epsilon_closure_branching.
+    - now apply reach_ambiguity_epsilon_closure_branching_implies_leafufa.
+  Qed.
+
+  Theorem reach_ambiguity_leafufa_implies_reachufa :
+    forall (m : finite_enfa) s,
+      finite_enfa_wf m ->
+      enfa_start (fenfa_base m) = [s] ->
+      enfa_LeafUFA m ->
+      enfa_ReachUFA m.
+  Proof.
+    intros m s Hwf Hstart Hleaf w q _.
+    unfold enfa_dra_prime_at.
+    apply NoDup_unique_length_le_one.
+    - apply NoDup_filter_bool.
+      eapply started_traces_single_start_NoDup; eauto.
+    - intros st1 st2 Hin1 Hin2.
+      apply filter_In in Hin1 as [Hstarted1 Hfilter1].
+      apply filter_In in Hin2 as [Hstarted2 Hfilter2].
+      apply andb_true_iff in Hfilter1 as [Hend1 Hsimple1].
+      apply andb_true_iff in Hfilter2 as [Hend2 Hsimple2].
+      destruct
+        (enfa_extend_to_maximal_epsilon_started_correct
+           m w st1 Hwf Hstarted1 Hsimple1)
+        as [Hext_in1 [_ [u1 [_ [_ [Hext_simple1 Hext_max1]]]]]].
+      destruct
+        (enfa_extend_to_maximal_epsilon_started_correct
+           m w st2 Hwf Hstarted2 Hsimple2)
+        as [Hext_in2 [_ [u2 [_ [_ [Hext_simple2 Hext_max2]]]]]].
+      assert (Hext_eq :
+        enfa_extend_to_maximal_epsilon_started m st1 =
+        enfa_extend_to_maximal_epsilon_started m st2).
+      {
+        eapply leaf_prime_maximal_started_trace_unique.
+        - exact Hwf.
+        - exact (Hleaf w).
+        - exact Hext_in1.
+        - exact Hext_in2.
+        - exact Hext_simple1.
+        - exact Hext_max1.
+        - exact Hext_simple2.
+        - exact Hext_max2.
+      }
+      eapply enfa_same_endpoint_maximal_extension_injective; eauto.
+      unfold ends_inb in Hend1, Hend2.
+      apply fenfa_state_eqb_sound in Hend1.
+      apply fenfa_state_eqb_sound in Hend2.
+      now rewrite Hend1, Hend2.
   Qed.
 
   Lemma started_traces_epsilon_free_single_start_NoDup :
@@ -4396,7 +4823,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 2 *)
-  Theorem section4_theorem2_epsilon_free_trim_ufa_implies_reachufa :
+  Theorem reach_ambiguity_epsilon_free_trim_ufa_implies_reachufa :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4510,7 +4937,7 @@ Section EpsilonNFA.
       lia.
   Qed.
 
-  Theorem section4_theorem2_epsilon_free_trim_ufa_implies_stufa :
+  Theorem reach_ambiguity_epsilon_free_trim_ufa_implies_stufa :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4678,7 +5105,7 @@ Section EpsilonNFA.
       lia.
   Qed.
 
-  Theorem section4_theorem2_epsilon_free_trim_ufa_implies_sufa :
+  Theorem reach_ambiguity_epsilon_free_trim_ufa_implies_sufa :
     forall (m : finite_enfa),
       enfa_epsilon_free m ->
       finite_enfa_wf m ->
@@ -4690,7 +5117,7 @@ Section EpsilonNFA.
     intros m Heps Hwf Hsingle Htrim Hufa.
     split.
     - exact Heps.
-    - eapply section4_theorem2_epsilon_free_trim_ufa_implies_reachufa; eauto.
+    - eapply reach_ambiguity_epsilon_free_trim_ufa_implies_reachufa; eauto.
   Qed.
 
   Lemma filter_unique_singleton :
@@ -4740,7 +5167,7 @@ Section EpsilonNFA.
   Qed.
 
   (* Theorem 2 *)
-  Theorem section4_theorem2_reachufa_single_final_list_implies_ufa :
+  Theorem reach_ambiguity_reachufa_single_final_list_implies_ufa :
     forall (m : finite_enfa),
       enfa_ReachUFA m ->
       forall f,
@@ -4757,7 +5184,7 @@ Section EpsilonNFA.
     lia.
   Qed.
 
-  Theorem section4_theorem2_reachufa_unique_terminating_state_implies_ufa :
+  Theorem reach_ambiguity_reachufa_unique_terminating_state_implies_ufa :
     forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_ReachUFA m ->
@@ -4765,13 +5192,13 @@ Section EpsilonNFA.
       enfa_UFA m.
   Proof.
     intros m Hwf Hreach [f [Hfin [Hfinal Hunique]]].
-    eapply section4_theorem2_reachufa_single_final_list_implies_ufa.
+    eapply reach_ambiguity_reachufa_single_final_list_implies_ufa.
     - exact Hreach.
     - exact Hfin.
     - eapply enfa_final_states_unique_final; eauto.
   Qed.
 
-  Theorem section4_theorem2_unambiguity_and_reach_unambiguity :
+  Theorem reach_ambiguity_unambiguity_and_reach_unambiguity :
     (forall (m : finite_enfa),
       finite_enfa_wf m ->
       enfa_LeafUFA m -> enfa_UFA m) /\
@@ -4808,12 +5235,12 @@ Section EpsilonNFA.
       enfa_UFA m).
   Proof.
     repeat split; intros; eauto using
-      section4_theorem2_leafufa_implies_ufa,
-      section4_theorem2_trim_extendable_ufa_implies_reachufa,
-      section4_theorem2_epsilon_free_trim_ufa_implies_reachufa,
-      section4_theorem2_epsilon_free_trim_ufa_implies_sufa,
-      section4_theorem2_reachufa_single_final_list_implies_ufa,
-      section4_theorem2_reachufa_unique_terminating_state_implies_ufa.
+      reach_ambiguity_leafufa_implies_ufa,
+      reach_ambiguity_trim_extendable_ufa_implies_reachufa,
+      reach_ambiguity_epsilon_free_trim_ufa_implies_reachufa,
+      reach_ambiguity_epsilon_free_trim_ufa_implies_sufa,
+      reach_ambiguity_reachufa_single_final_list_implies_ufa,
+      reach_ambiguity_reachufa_unique_terminating_state_implies_ufa.
   Qed.
 End EpsilonNFA.
 

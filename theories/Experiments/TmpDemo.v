@@ -1,7 +1,7 @@
 From Stdlib Require Import List Bool.
 Import ListNotations.
 
-From PositionAutomata.Ambiguity Require Import DegreeofInfiniteAmbiguity.
+From PositionAutomata.Ambiguity Require Import InfiniteAmbiguity.
 From PositionAutomata.Regex Require Import RegexReDoS.
 From PositionAutomata.Demos Require Import Examples.
 

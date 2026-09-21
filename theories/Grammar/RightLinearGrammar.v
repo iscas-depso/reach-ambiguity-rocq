@@ -1,7 +1,7 @@
 From Stdlib Require Import List Bool Arith Lia.
 Import ListNotations.
 
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 From PositionAutomata.Automata Require Import EpsilonNFA.
 
 (** Section 4, Definitions 8--9 and Gamma bridge support for right-linear
@@ -264,20 +264,20 @@ Section RightLinearGrammar.
       cfg_leaf_prime_derivation G alpha d2 ->
       d1 = d2.
 
-  Definition section4_finite_cardinality {B : Type}
+  Definition reach_ambiguity_finite_cardinality {B : Type}
       (P : B -> Prop)
       (xs : list B) : Prop :=
     NoDup xs /\ forall x, In x xs <-> P x.
 
-  Definition section4_cardinality {B : Type}
+  Definition reach_ambiguity_cardinality {B : Type}
       (P : B -> Prop)
       (n : nat) : Prop :=
-    exists xs, section4_finite_cardinality P xs /\ length xs = n.
+    exists xs, reach_ambiguity_finite_cardinality P xs /\ length xs = n.
 
-  Lemma section4_finite_cardinality_length_unique :
+  Lemma reach_ambiguity_finite_cardinality_length_unique :
     forall {B : Type} (P : B -> Prop) xs ys,
-      section4_finite_cardinality P xs ->
-      section4_finite_cardinality P ys ->
+      reach_ambiguity_finite_cardinality P xs ->
+      reach_ambiguity_finite_cardinality P ys ->
       length xs = length ys.
   Proof.
     intros B P xs ys [Hnodup_xs Hxs] [Hnodup_ys Hys].
@@ -292,18 +292,18 @@ Section RightLinearGrammar.
       now apply Hys.
   Qed.
 
-  Lemma section4_cardinality_functional :
+  Lemma reach_ambiguity_cardinality_functional :
     forall {B : Type} (P : B -> Prop) n m,
-      section4_cardinality P n ->
-      section4_cardinality P m ->
+      reach_ambiguity_cardinality P n ->
+      reach_ambiguity_cardinality P m ->
       n = m.
   Proof.
     intros B P n m [xs [Hxs Hlen_xs]] [ys [Hys Hlen_ys]].
     subst.
-    now apply section4_finite_cardinality_length_unique with (P := P).
+    now apply reach_ambiguity_finite_cardinality_length_unique with (P := P).
   Qed.
 
-  Lemma section4_NoDup_length_le_one_unique :
+  Lemma reach_ambiguity_NoDup_length_le_one_unique :
     forall {B : Type} (xs : list B) x y,
       NoDup xs ->
       length xs <= 1 ->
@@ -322,7 +322,7 @@ Section RightLinearGrammar.
       + simpl in Hle. lia.
   Qed.
 
-  Lemma section4_NoDup_unique_length_le_one :
+  Lemma reach_ambiguity_NoDup_unique_length_le_one :
     forall {B : Type} (xs : list B),
       NoDup xs ->
       (forall x y, In x xs -> In y xs -> x = y) ->
@@ -341,90 +341,90 @@ Section RightLinearGrammar.
         apply Hnotin. simpl. auto.
   Qed.
 
-  Lemma section4_finite_cardinality_le_one_unique :
+  Lemma reach_ambiguity_finite_cardinality_le_one_unique :
     forall {B : Type} (P : B -> Prop) xs,
-      section4_finite_cardinality P xs ->
+      reach_ambiguity_finite_cardinality P xs ->
       length xs <= 1 ->
       forall x y, P x -> P y -> x = y.
   Proof.
     intros B P xs [Hnodup Hxs] Hle x y HPx HPy.
-    eapply section4_NoDup_length_le_one_unique; eauto.
+    eapply reach_ambiguity_NoDup_length_le_one_unique; eauto.
     - now apply Hxs.
     - now apply Hxs.
   Qed.
 
-  Lemma section4_finite_cardinality_unique_le_one :
+  Lemma reach_ambiguity_finite_cardinality_unique_le_one :
     forall {B : Type} (P : B -> Prop) xs,
-      section4_finite_cardinality P xs ->
+      reach_ambiguity_finite_cardinality P xs ->
       (forall x y, P x -> P y -> x = y) ->
       length xs <= 1.
   Proof.
     intros B P xs [Hnodup Hxs] Hunique.
-    eapply section4_NoDup_unique_length_le_one; eauto.
+    eapply reach_ambiguity_NoDup_unique_length_le_one; eauto.
     intros x y Hinx Hiny.
     apply Hunique; now apply Hxs.
   Qed.
 
-  Lemma section4_finite_cardinality_le_one_iff_unique :
+  Lemma reach_ambiguity_finite_cardinality_le_one_iff_unique :
     forall {B : Type} (P : B -> Prop) xs,
-      section4_finite_cardinality P xs ->
+      reach_ambiguity_finite_cardinality P xs ->
       length xs <= 1 <-> forall x y, P x -> P y -> x = y.
   Proof.
     intros B P xs Hcard.
     split.
-    - now apply section4_finite_cardinality_le_one_unique.
-    - now apply section4_finite_cardinality_unique_le_one.
+    - now apply reach_ambiguity_finite_cardinality_le_one_unique.
+    - now apply reach_ambiguity_finite_cardinality_unique_le_one.
   Qed.
 
-  Inductive section4_enat : Type :=
-  | Section4Finite : nat -> section4_enat
-  | Section4Infinite : section4_enat.
+  Inductive extended_nat : Type :=
+  | FiniteValue : nat -> extended_nat
+  | InfiniteValue : extended_nat.
 
-  Definition section4_enat_le
-      (x y : section4_enat) : Prop :=
+  Definition extended_nat_le
+      (x y : extended_nat) : Prop :=
     match x, y with
-    | Section4Finite n, Section4Finite m => n <= m
-    | Section4Finite _, Section4Infinite => True
-    | Section4Infinite, Section4Infinite => True
-    | Section4Infinite, Section4Finite _ => False
+    | FiniteValue n, FiniteValue m => n <= m
+    | FiniteValue _, InfiniteValue => True
+    | InfiniteValue, InfiniteValue => True
+    | InfiniteValue, FiniteValue _ => False
     end.
 
-  Definition section4_enat_upper_bound {I : Type}
-      (measure : I -> section4_enat -> Prop)
-      (bound : section4_enat) : Prop :=
-    forall i c, measure i c -> section4_enat_le c bound.
+  Definition extended_nat_upper_bound {I : Type}
+      (measure : I -> extended_nat -> Prop)
+      (bound : extended_nat) : Prop :=
+    forall i c, measure i c -> extended_nat_le c bound.
 
-  Definition section4_enat_supremum {I : Type}
-      (measure : I -> section4_enat -> Prop)
-      (sup : section4_enat) : Prop :=
-    section4_enat_upper_bound measure sup /\
-    forall bound, section4_enat_upper_bound measure bound ->
-      section4_enat_le sup bound.
+  Definition extended_nat_supremum {I : Type}
+      (measure : I -> extended_nat -> Prop)
+      (sup : extended_nat) : Prop :=
+    extended_nat_upper_bound measure sup /\
+    forall bound, extended_nat_upper_bound measure bound ->
+      extended_nat_le sup bound.
 
-  Definition section4_enat_supremum_le {I : Type}
-      (measure : I -> section4_enat -> Prop)
-      (bound : section4_enat) : Prop :=
-    exists sup, section4_enat_supremum measure sup /\
-      section4_enat_le sup bound.
+  Definition extended_nat_supremum_le {I : Type}
+      (measure : I -> extended_nat -> Prop)
+      (bound : extended_nat) : Prop :=
+    exists sup, extended_nat_supremum measure sup /\
+      extended_nat_le sup bound.
 
-  Definition section4_infinite_cardinality {B : Type}
+  Definition reach_ambiguity_infinite_cardinality {B : Type}
       (P : B -> Prop) : Prop :=
     exists f : nat -> B,
       (forall n, P (f n)) /\
       forall i j, f i = f j -> i = j.
 
-  Definition section4_extended_cardinality {B : Type}
+  Definition reach_ambiguity_extended_cardinality {B : Type}
       (P : B -> Prop)
-      (c : section4_enat) : Prop :=
+      (c : extended_nat) : Prop :=
     match c with
-    | Section4Finite n => section4_cardinality P n
-    | Section4Infinite => section4_infinite_cardinality P
+    | FiniteValue n => reach_ambiguity_cardinality P n
+    | InfiniteValue => reach_ambiguity_infinite_cardinality P
     end.
 
-  Lemma section4_finite_cardinality_not_infinite :
+  Lemma reach_ambiguity_finite_cardinality_not_infinite :
     forall {B : Type} (P : B -> Prop) xs,
-      section4_finite_cardinality P xs ->
-      section4_infinite_cardinality P ->
+      reach_ambiguity_finite_cardinality P xs ->
+      reach_ambiguity_infinite_cardinality P ->
       False.
   Proof.
     intros B P xs [Hnodup Hxs] [f [Hf Hinj]].
@@ -443,138 +443,138 @@ Section RightLinearGrammar.
     unfold ns in Hle. rewrite length_map, length_seq in Hle. lia.
   Qed.
 
-  Lemma section4_cardinality_not_infinite :
+  Lemma reach_ambiguity_cardinality_not_infinite :
     forall {B : Type} (P : B -> Prop) n,
-      section4_cardinality P n ->
-      section4_infinite_cardinality P ->
+      reach_ambiguity_cardinality P n ->
+      reach_ambiguity_infinite_cardinality P ->
       False.
   Proof.
     intros B P n [xs [Hfinite _]] Hinf.
-    eapply section4_finite_cardinality_not_infinite; eauto.
+    eapply reach_ambiguity_finite_cardinality_not_infinite; eauto.
   Qed.
 
-  Lemma section4_extended_cardinality_functional :
+  Lemma reach_ambiguity_extended_cardinality_functional :
     forall {B : Type} (P : B -> Prop) c1 c2,
-      section4_extended_cardinality P c1 ->
-      section4_extended_cardinality P c2 ->
+      reach_ambiguity_extended_cardinality P c1 ->
+      reach_ambiguity_extended_cardinality P c2 ->
       c1 = c2.
   Proof.
     intros B P [n1 |] [n2 |] H1 H2; simpl in *.
-    - f_equal. eapply section4_cardinality_functional; eauto.
-    - exfalso. eapply section4_cardinality_not_infinite; eauto.
-    - exfalso. eapply section4_cardinality_not_infinite; eauto.
+    - f_equal. eapply reach_ambiguity_cardinality_functional; eauto.
+    - exfalso. eapply reach_ambiguity_cardinality_not_infinite; eauto.
+    - exfalso. eapply reach_ambiguity_cardinality_not_infinite; eauto.
     - reflexivity.
   Qed.
 
-  Lemma section4_enat_infinite_supremum_of_infinite_measure :
-    forall {I : Type} (measure : I -> section4_enat -> Prop) i,
-      measure i Section4Infinite ->
-      section4_enat_supremum measure Section4Infinite.
+  Lemma extended_nat_infinite_supremum_of_infinite_measure :
+    forall {I : Type} (measure : I -> extended_nat -> Prop) i,
+      measure i InfiniteValue ->
+      extended_nat_supremum measure InfiniteValue.
   Proof.
     intros I measure i Hinf.
     split.
     - intros j [n |] _; simpl; auto.
     - intros [bound |] Hupper; simpl; auto.
-      specialize (Hupper i Section4Infinite Hinf).
+      specialize (Hupper i InfiniteValue Hinf).
       simpl in Hupper. contradiction.
   Qed.
 
-  Definition section4_definition8_I_i_cfg_da_cardinality
+  Definition reach_ambiguity_cfg_da_cardinality
       (G : context_free_grammar)
       (w : list A)
       (n : nat) : Prop :=
-    section4_cardinality (cfg_da_derivation G w) n.
+    reach_ambiguity_cardinality (cfg_da_derivation G w) n.
 
-  Definition section4_definition8_I_ii_cfg_dra_cardinality
+  Definition reach_ambiguity_cfg_dra_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
       (n : nat) : Prop :=
-    section4_cardinality (cfg_dra_derivation G alpha X) n.
+    reach_ambiguity_cardinality (cfg_dra_derivation G alpha X) n.
 
-  Definition section4_definition8_I_iii_cfg_leaf_cardinality
+  Definition reach_ambiguity_cfg_leaf_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (n : nat) : Prop :=
-    section4_cardinality (cfg_leaf_derivation G alpha) n.
+    reach_ambiguity_cardinality (cfg_leaf_derivation G alpha) n.
 
-  Definition section4_definition8_II_i_cfg_da_prime_cardinality
+  Definition reach_ambiguity_cfg_da_prime_cardinality
       (G : context_free_grammar)
       (w : list A)
       (n : nat) : Prop :=
-    section4_cardinality (cfg_da_prime_derivation G w) n.
+    reach_ambiguity_cardinality (cfg_da_prime_derivation G w) n.
 
-  Definition section4_definition8_II_ii_cfg_dra_prime_cardinality
+  Definition reach_ambiguity_cfg_dra_prime_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
       (n : nat) : Prop :=
-    section4_cardinality (cfg_dra_prime_derivation G alpha X) n.
+    reach_ambiguity_cardinality (cfg_dra_prime_derivation G alpha X) n.
 
-  Definition section4_definition8_II_iii_cfg_leaf_prime_cardinality
+  Definition reach_ambiguity_cfg_leaf_prime_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (n : nat) : Prop :=
-    section4_cardinality (cfg_leaf_prime_derivation G alpha) n.
+    reach_ambiguity_cardinality (cfg_leaf_prime_derivation G alpha) n.
 
-  Definition section4_definition8_I_i_cfg_da_extended_cardinality
+  Definition reach_ambiguity_cfg_da_extended_cardinality
       (G : context_free_grammar)
       (w : list A)
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_da_derivation G w) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_da_derivation G w) c.
 
-  Definition section4_definition8_I_ii_cfg_dra_extended_cardinality
+  Definition reach_ambiguity_cfg_dra_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_dra_derivation G alpha X) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_dra_derivation G alpha X) c.
 
-  Definition section4_definition8_I_iii_cfg_leaf_extended_cardinality
+  Definition reach_ambiguity_cfg_leaf_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_leaf_derivation G alpha) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_leaf_derivation G alpha) c.
 
-  Definition section4_definition8_II_i_cfg_da_prime_extended_cardinality
+  Definition reach_ambiguity_cfg_da_prime_extended_cardinality
       (G : context_free_grammar)
       (w : list A)
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_da_prime_derivation G w) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_da_prime_derivation G w) c.
 
-  Definition section4_definition8_II_ii_cfg_dra_prime_extended_cardinality
+  Definition reach_ambiguity_cfg_dra_prime_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_dra_prime_derivation G alpha X) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_dra_prime_derivation G alpha X) c.
 
-  Definition section4_definition8_II_iii_cfg_leaf_prime_extended_cardinality
+  Definition reach_ambiguity_cfg_leaf_prime_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
-      (c : section4_enat) : Prop :=
-    section4_extended_cardinality (cfg_leaf_prime_derivation G alpha) c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_extended_cardinality (cfg_leaf_prime_derivation G alpha) c.
 
-  Definition section4_nat_upper_bound {I : Type}
+  Definition reach_ambiguity_nat_upper_bound {I : Type}
       (measure : I -> nat -> Prop)
       (bound : nat) : Prop :=
     forall i n, measure i n -> n <= bound.
 
-  Definition section4_nat_supremum {I : Type}
+  Definition reach_ambiguity_nat_supremum {I : Type}
       (measure : I -> nat -> Prop)
       (sup : nat) : Prop :=
-    section4_nat_upper_bound measure sup /\
-    forall bound, section4_nat_upper_bound measure bound -> sup <= bound.
+    reach_ambiguity_nat_upper_bound measure sup /\
+    forall bound, reach_ambiguity_nat_upper_bound measure bound -> sup <= bound.
 
-  Definition section4_nat_supremum_le {I : Type}
+  Definition reach_ambiguity_nat_supremum_le {I : Type}
       (measure : I -> nat -> Prop)
       (bound : nat) : Prop :=
-    exists sup, section4_nat_supremum measure sup /\ sup <= bound.
+    exists sup, reach_ambiguity_nat_supremum measure sup /\ sup <= bound.
 
-  Lemma section4_nat_supremum_le_upper_bound :
+  Lemma reach_ambiguity_nat_supremum_le_upper_bound :
     forall {I : Type} (measure : I -> nat -> Prop) bound,
-      section4_nat_supremum_le measure bound ->
-      section4_nat_upper_bound measure bound.
+      reach_ambiguity_nat_supremum_le measure bound ->
+      reach_ambiguity_nat_upper_bound measure bound.
   Proof.
     intros I measure bound [sup [[Hupper _] Hle]] i n Hmeasure.
     specialize (Hupper i n Hmeasure).
@@ -585,240 +585,240 @@ Section RightLinearGrammar.
       (G : context_free_grammar)
       (w : list A)
       (n : nat) : Prop :=
-    section4_definition8_II_i_cfg_da_prime_cardinality G w n.
+    reach_ambiguity_cfg_da_prime_cardinality G w n.
 
   Definition cfg_dra_prime_finite_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
       (n : nat) : Prop :=
-    section4_definition8_II_ii_cfg_dra_prime_cardinality G alpha X n.
+    reach_ambiguity_cfg_dra_prime_cardinality G alpha X n.
 
   Definition cfg_leaf_prime_finite_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (n : nat) : Prop :=
-    section4_definition8_II_iii_cfg_leaf_prime_cardinality G alpha n.
+    reach_ambiguity_cfg_leaf_prime_cardinality G alpha n.
 
   Definition cfg_da_prime_extended_cardinality
       (G : context_free_grammar)
       (w : list A)
-      (c : section4_enat) : Prop :=
-    section4_definition8_II_i_cfg_da_prime_extended_cardinality G w c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_cfg_da_prime_extended_cardinality G w c.
 
   Definition cfg_dra_prime_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
       (X : cfg_nonterminal G)
-      (c : section4_enat) : Prop :=
-    section4_definition8_II_ii_cfg_dra_prime_extended_cardinality G alpha X c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_cfg_dra_prime_extended_cardinality G alpha X c.
 
   Definition cfg_leaf_prime_extended_cardinality
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
-      (c : section4_enat) : Prop :=
-    section4_definition8_II_iii_cfg_leaf_prime_extended_cardinality G alpha c.
+      (c : extended_nat) : Prop :=
+    reach_ambiguity_cfg_leaf_prime_extended_cardinality G alpha c.
 
   Definition cfg_reach_index (G : context_free_grammar) : Type :=
     (cfg_sentential_form (cfg_nonterminal G) * cfg_nonterminal G)%type.
 
-  Definition section4_definition9_I_cfg_da_prime_degree_le
+  Definition reach_ambiguity_cfg_da_prime_degree_le
       (G : context_free_grammar)
       (bound : nat) : Prop :=
-    section4_nat_upper_bound
+    reach_ambiguity_nat_upper_bound
       (fun w n => cfg_da_prime_finite_cardinality G w n)
       bound.
 
-  Definition section4_definition9_II_cfg_dra_prime_degree_le
+  Definition reach_ambiguity_cfg_dra_prime_degree_le
       (G : context_free_grammar)
       (bound : nat) : Prop :=
-    section4_nat_upper_bound
+    reach_ambiguity_nat_upper_bound
       (fun ix n =>
          cfg_dra_prime_finite_cardinality G (fst ix) (snd ix) n)
       bound.
 
-  Definition section4_definition9_III_cfg_leaf_prime_degree_le
+  Definition reach_ambiguity_cfg_leaf_prime_degree_le
       (G : context_free_grammar)
       (bound : nat) : Prop :=
-    section4_nat_upper_bound
+    reach_ambiguity_nat_upper_bound
       (fun alpha n => cfg_leaf_prime_finite_cardinality G alpha n)
       bound.
 
   (* Exact finite-supremum predicates over finite-cardinality witnesses.
      Infinite and extended-natural readings are provided by the extended
      cardinality layer below. *)
-  Definition section4_definition9_I_cfg_da_prime_degree
+  Definition reach_ambiguity_cfg_da_prime_degree
       (G : context_free_grammar)
       (degree : nat) : Prop :=
-    section4_nat_supremum
+    reach_ambiguity_nat_supremum
       (fun w n => cfg_da_prime_finite_cardinality G w n)
       degree.
 
-  Definition section4_definition9_II_cfg_dra_prime_degree
+  Definition reach_ambiguity_cfg_dra_prime_degree
       (G : context_free_grammar)
       (degree : nat) : Prop :=
-    section4_nat_supremum
+    reach_ambiguity_nat_supremum
       (fun ix n =>
          cfg_dra_prime_finite_cardinality G (fst ix) (snd ix) n)
       degree.
 
-  Definition section4_definition9_III_cfg_leaf_prime_degree
+  Definition reach_ambiguity_cfg_leaf_prime_degree
       (G : context_free_grammar)
       (degree : nat) : Prop :=
-    section4_nat_supremum
+    reach_ambiguity_nat_supremum
       (fun alpha n => cfg_leaf_prime_finite_cardinality G alpha n)
       degree.
 
-  Definition section4_definition9_I_cfg_da_prime_extended_degree_le
+  Definition reach_ambiguity_cfg_da_prime_extended_degree_le
       (G : context_free_grammar)
-      (bound : section4_enat) : Prop :=
-    section4_enat_upper_bound
+      (bound : extended_nat) : Prop :=
+    extended_nat_upper_bound
       (fun w c => cfg_da_prime_extended_cardinality G w c)
       bound.
 
-  Definition section4_definition9_II_cfg_dra_prime_extended_degree_le
+  Definition reach_ambiguity_cfg_dra_prime_extended_degree_le
       (G : context_free_grammar)
-      (bound : section4_enat) : Prop :=
-    section4_enat_upper_bound
+      (bound : extended_nat) : Prop :=
+    extended_nat_upper_bound
       (fun ix c =>
          cfg_dra_prime_extended_cardinality G (fst ix) (snd ix) c)
       bound.
 
-  Definition section4_definition9_III_cfg_leaf_prime_extended_degree_le
+  Definition reach_ambiguity_cfg_leaf_prime_extended_degree_le
       (G : context_free_grammar)
-      (bound : section4_enat) : Prop :=
-    section4_enat_upper_bound
+      (bound : extended_nat) : Prop :=
+    extended_nat_upper_bound
       (fun alpha c => cfg_leaf_prime_extended_cardinality G alpha c)
       bound.
 
-  Definition section4_definition9_I_cfg_da_prime_extended_degree
+  Definition reach_ambiguity_cfg_da_prime_extended_degree
       (G : context_free_grammar)
-      (degree : section4_enat) : Prop :=
-    section4_enat_supremum
+      (degree : extended_nat) : Prop :=
+    extended_nat_supremum
       (fun w c => cfg_da_prime_extended_cardinality G w c)
       degree.
 
-  Definition section4_definition9_II_cfg_dra_prime_extended_degree
+  Definition reach_ambiguity_cfg_dra_prime_extended_degree
       (G : context_free_grammar)
-      (degree : section4_enat) : Prop :=
-    section4_enat_supremum
+      (degree : extended_nat) : Prop :=
+    extended_nat_supremum
       (fun ix c =>
          cfg_dra_prime_extended_cardinality G (fst ix) (snd ix) c)
       degree.
 
-  Definition section4_definition9_III_cfg_leaf_prime_extended_degree
+  Definition reach_ambiguity_cfg_leaf_prime_extended_degree
       (G : context_free_grammar)
-      (degree : section4_enat) : Prop :=
-    section4_enat_supremum
+      (degree : extended_nat) : Prop :=
+    extended_nat_supremum
       (fun alpha c => cfg_leaf_prime_extended_cardinality G alpha c)
       degree.
 
-  Theorem section4_definition9_I_cfg_unambiguous_iff_da_prime_degree_le_one_under_finite_cardinality :
+  Theorem reach_ambiguity_cfg_unambiguous_iff_da_prime_degree_le_one_under_finite_cardinality :
     forall (G : context_free_grammar),
       (forall w, exists n, cfg_da_prime_finite_cardinality G w n) ->
       cfg_prime_unambiguous G <->
-      section4_definition9_I_cfg_da_prime_degree_le G 1.
+      reach_ambiguity_cfg_da_prime_degree_le G 1.
   Proof.
     intros G Hfinite.
     split.
     - intros Huniq w n [xs [Hcard Hlen]].
       rewrite <- Hlen.
-      apply (section4_finite_cardinality_unique_le_one
+      apply (reach_ambiguity_finite_cardinality_unique_le_one
                (cfg_da_prime_derivation G w) xs Hcard).
       intros d1 d2 Hd1 Hd2.
       eapply Huniq; eauto.
     - intros Hdegree w d1 d2 Hd1 Hd2.
       destruct (Hfinite w) as [n [xs [Hcard Hlen]]].
-      eapply section4_finite_cardinality_le_one_unique; eauto.
+      eapply reach_ambiguity_finite_cardinality_le_one_unique; eauto.
       rewrite Hlen.
       eapply Hdegree.
       exists xs. split; eauto.
   Qed.
 
-  Theorem section4_definition9_II_cfg_reach_unambiguous_iff_dra_prime_degree_le_one_under_finite_cardinality :
+  Theorem reach_ambiguity_cfg_reach_unambiguous_iff_dra_prime_degree_le_one_under_finite_cardinality :
     forall (G : context_free_grammar),
       (forall alpha X,
           exists n, cfg_dra_prime_finite_cardinality G alpha X n) ->
       cfg_prime_reach_unambiguous G <->
-      section4_definition9_II_cfg_dra_prime_degree_le G 1.
+      reach_ambiguity_cfg_dra_prime_degree_le G 1.
   Proof.
     intros G Hfinite.
     split.
     - intros Huniq [alpha X] n [xs [Hcard Hlen]].
       rewrite <- Hlen.
-      apply (section4_finite_cardinality_unique_le_one
+      apply (reach_ambiguity_finite_cardinality_unique_le_one
                (cfg_dra_prime_derivation G alpha X) xs Hcard).
       intros d1 d2 Hd1 Hd2.
       eapply Huniq; eauto.
     - intros Hdegree alpha X d1 d2 Hd1 Hd2.
       destruct (Hfinite alpha X) as [n [xs [Hcard Hlen]]].
-      eapply section4_finite_cardinality_le_one_unique; eauto.
+      eapply reach_ambiguity_finite_cardinality_le_one_unique; eauto.
       rewrite Hlen.
       eapply (Hdegree (alpha, X) n).
       exists xs. split; eauto.
   Qed.
 
-  Theorem section4_definition9_III_cfg_leaf_unambiguous_iff_leaf_prime_degree_le_one_under_finite_cardinality :
+  Theorem reach_ambiguity_cfg_leaf_unambiguous_iff_leaf_prime_degree_le_one_under_finite_cardinality :
     forall (G : context_free_grammar),
       (forall alpha, exists n, cfg_leaf_prime_finite_cardinality G alpha n) ->
       cfg_prime_leaf_unambiguous G <->
-      section4_definition9_III_cfg_leaf_prime_degree_le G 1.
+      reach_ambiguity_cfg_leaf_prime_degree_le G 1.
   Proof.
     intros G Hfinite.
     split.
     - intros Huniq alpha n [xs [Hcard Hlen]].
       rewrite <- Hlen.
-      apply (section4_finite_cardinality_unique_le_one
+      apply (reach_ambiguity_finite_cardinality_unique_le_one
                (cfg_leaf_prime_derivation G alpha) xs Hcard).
       intros d1 d2 Hd1 Hd2.
       eapply Huniq; eauto.
     - intros Hdegree alpha d1 d2 Hd1 Hd2.
       destruct (Hfinite alpha) as [n [xs [Hcard Hlen]]].
-      eapply section4_finite_cardinality_le_one_unique; eauto.
+      eapply reach_ambiguity_finite_cardinality_le_one_unique; eauto.
       rewrite Hlen.
       eapply Hdegree.
       exists xs. split; eauto.
   Qed.
 
-  Definition section4_definition8_I_i_cfg_da := cfg_da_derivation.
-  Definition section4_definition8_I_ii_cfg_dra := cfg_dra_derivation.
-  Definition section4_definition8_I_iii_cfg_leaf := cfg_leaf_derivation.
-  Definition section4_definition8_II_i_cfg_da_prime :=
+  Definition reach_ambiguity_cfg_da := cfg_da_derivation.
+  Definition reach_ambiguity_cfg_dra := cfg_dra_derivation.
+  Definition reach_ambiguity_cfg_leaf := cfg_leaf_derivation.
+  Definition reach_ambiguity_cfg_da_prime :=
     cfg_da_prime_derivation.
-  Definition section4_definition8_II_ii_cfg_dra_prime :=
+  Definition reach_ambiguity_cfg_dra_prime :=
     cfg_dra_prime_derivation.
-  Definition section4_definition8_II_iii_cfg_leaf_prime :=
+  Definition reach_ambiguity_cfg_leaf_prime :=
     cfg_leaf_prime_derivation.
-  Definition section4_definition9_I_cfg_unambiguous :=
+  Definition reach_ambiguity_cfg_unambiguous :=
     cfg_prime_unambiguous.
-  Definition section4_definition9_II_cfg_reach_unambiguous :=
+  Definition reach_ambiguity_cfg_reach_unambiguous :=
     cfg_prime_reach_unambiguous.
-  Definition section4_definition9_III_cfg_leaf_unambiguous :=
+  Definition reach_ambiguity_cfg_leaf_unambiguous :=
     cfg_prime_leaf_unambiguous.
 
   (** Definitions 8/9 base semantics: a right-linear grammar derives a
       terminal word from a nonterminal.  The explicit derivation layer below
       keeps production sequences so ambiguity can distinguish derivations. *)
-  Definition section4_cfg_self_loop : context_free_grammar :=
+  Definition reach_ambiguity_cfg_self_loop : context_free_grammar :=
     {|
       cfg_nonterminal := unit;
       cfg_start := tt;
       cfg_productions := [(tt, [CfgNonterminal tt])]
     |}.
 
-  Definition section4_cfg_self_loop_production
-      : cfg_production section4_cfg_self_loop :=
+  Definition reach_ambiguity_cfg_self_loop_production
+      : cfg_production reach_ambiguity_cfg_self_loop :=
     (tt, [CfgNonterminal tt]).
 
-  Definition section4_cfg_self_loop_derivation (n : nat)
-      : cfg_derivation section4_cfg_self_loop :=
-    repeat section4_cfg_self_loop_production n.
+  Definition reach_ambiguity_cfg_self_loop_derivation (n : nat)
+      : cfg_derivation reach_ambiguity_cfg_self_loop :=
+    repeat reach_ambiguity_cfg_self_loop_production n.
 
-  Lemma section4_cfg_self_loop_marked_derivation_repeat :
+  Lemma reach_ambiguity_cfg_self_loop_marked_derivation_repeat :
     forall n,
       cfg_marked_rightmost_derivation_valid
-        section4_cfg_self_loop
-        (section4_cfg_self_loop_derivation n)
+        reach_ambiguity_cfg_self_loop
+        (reach_ambiguity_cfg_self_loop_derivation n)
         [CfgLeftMarker; CfgNonterminal tt].
   Proof.
     unfold cfg_marked_rightmost_derivation_valid.
@@ -828,7 +828,7 @@ Section RightLinearGrammar.
         with (beta := [CfgLeftMarker; CfgNonterminal tt]).
       + change
           (cfg_rightmost_step_by_production
-             section4_cfg_self_loop
+             reach_ambiguity_cfg_self_loop
              ([CfgLeftMarker] ++ CfgNonterminal tt :: [])
              (tt, [CfgNonterminal tt])
              ([CfgLeftMarker] ++ [CfgNonterminal tt] ++ [])).
@@ -836,59 +836,59 @@ Section RightLinearGrammar.
       + exact IH.
   Qed.
 
-  Lemma section4_cfg_self_loop_dra_repeat :
+  Lemma reach_ambiguity_cfg_self_loop_dra_repeat :
     forall n,
       cfg_dra_derivation
-        section4_cfg_self_loop
+        reach_ambiguity_cfg_self_loop
         []
         tt
-        (section4_cfg_self_loop_derivation n).
+        (reach_ambiguity_cfg_self_loop_derivation n).
   Proof.
     intro n.
     split; simpl; auto.
     exists []. split; simpl; auto.
-    apply section4_cfg_self_loop_marked_derivation_repeat.
+    apply reach_ambiguity_cfg_self_loop_marked_derivation_repeat.
   Qed.
 
-  Lemma section4_cfg_self_loop_derivation_injective :
+  Lemma reach_ambiguity_cfg_self_loop_derivation_injective :
     forall i j,
-      section4_cfg_self_loop_derivation i =
-      section4_cfg_self_loop_derivation j ->
+      reach_ambiguity_cfg_self_loop_derivation i =
+      reach_ambiguity_cfg_self_loop_derivation j ->
       i = j.
   Proof.
     intros i j Heq.
     apply (f_equal (@length _)) in Heq.
-    unfold section4_cfg_self_loop_derivation in Heq.
+    unfold reach_ambiguity_cfg_self_loop_derivation in Heq.
     repeat rewrite repeat_length in Heq.
     exact Heq.
   Qed.
 
-  Theorem section4_cfg_self_loop_dra_fiber_infinite :
-    section4_infinite_cardinality
-      (cfg_dra_derivation section4_cfg_self_loop [] tt).
+  Theorem reach_ambiguity_cfg_self_loop_dra_fiber_infinite :
+    reach_ambiguity_infinite_cardinality
+      (cfg_dra_derivation reach_ambiguity_cfg_self_loop [] tt).
   Proof.
-    exists section4_cfg_self_loop_derivation.
+    exists reach_ambiguity_cfg_self_loop_derivation.
     split.
-    - apply section4_cfg_self_loop_dra_repeat.
-    - apply section4_cfg_self_loop_derivation_injective.
+    - apply reach_ambiguity_cfg_self_loop_dra_repeat.
+    - apply reach_ambiguity_cfg_self_loop_derivation_injective.
   Qed.
 
-  Theorem section4_cfg_self_loop_dra_extended_cardinality_infinite :
-    section4_definition8_I_ii_cfg_dra_extended_cardinality
-      section4_cfg_self_loop [] tt Section4Infinite.
+  Theorem reach_ambiguity_cfg_self_loop_dra_extended_cardinality_infinite :
+    reach_ambiguity_cfg_dra_extended_cardinality
+      reach_ambiguity_cfg_self_loop [] tt InfiniteValue.
   Proof.
-    exact section4_cfg_self_loop_dra_fiber_infinite.
+    exact reach_ambiguity_cfg_self_loop_dra_fiber_infinite.
   Qed.
 
-  Theorem section4_cfg_self_loop_dra_fiber_not_finite :
+  Theorem reach_ambiguity_cfg_self_loop_dra_fiber_not_finite :
     ~ exists xs,
-        section4_finite_cardinality
-          (cfg_dra_derivation section4_cfg_self_loop [] tt)
+        reach_ambiguity_finite_cardinality
+          (cfg_dra_derivation reach_ambiguity_cfg_self_loop [] tt)
           xs.
   Proof.
     intros [xs Hfinite].
-    eapply section4_finite_cardinality_not_infinite; eauto.
-    exact section4_cfg_self_loop_dra_fiber_infinite.
+    eapply reach_ambiguity_finite_cardinality_not_infinite; eauto.
+    exact reach_ambiguity_cfg_self_loop_dra_fiber_infinite.
   Qed.
 
   Inductive rlg_derives_from (G : right_linear_grammar)
@@ -2885,7 +2885,7 @@ Section RightLinearGrammar.
         split; congruence.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_pair_injective :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_pair_injective :
     forall (m : @finite_enfa A) root t1 q1 t2 q2,
       gamma_derivation_of_trace m root t1 q1 =
       gamma_derivation_of_trace m root t2 q2 ->
@@ -2913,7 +2913,7 @@ Section RightLinearGrammar.
     - destruct l; simpl; now rewrite IH.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_epsilon_simple :
     forall (m : @finite_enfa A) root p t q,
       rlg_epsilon_simpleb
         (gamma_grammar_from m root)
@@ -2943,7 +2943,7 @@ Section RightLinearGrammar.
     - destruct l; simpl; now rewrite IH.
   Qed.
 
-  Theorem section4_gamma_support_prefix_trace_derivation_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_prefix_trace_derivation_epsilon_simple :
     forall (m : @finite_enfa A) root p t,
       rlg_epsilon_simpleb
         (gamma_grammar_from m root)
@@ -3108,7 +3108,7 @@ Section RightLinearGrammar.
           -- apply Htodo. simpl. auto.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_strict_epsilon_closure :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_strict_epsilon_closure :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3150,7 +3150,7 @@ Section RightLinearGrammar.
     eapply fenfa_steps_in_states; eauto.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_accepting_maximal_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_accepting_maximal_epsilon_simple :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3168,7 +3168,7 @@ Section RightLinearGrammar.
       (finite_enfa_wf_valid_trace_end_in_states m p t q Hwf Hp Htrace) as Hq.
     unfold enfa_accepting_maximal_epsilon_simpleb,
       rlg_accepting_maximal_epsilon_simpleb.
-    rewrite section4_gamma_support_trace_derivation_strict_epsilon_closure
+    rewrite reach_ambiguity_gamma_support_trace_derivation_strict_epsilon_closure
       by auto.
     apply forallb_ext_in.
     intros x Hx.
@@ -3179,7 +3179,7 @@ Section RightLinearGrammar.
     reflexivity.
   Qed.
 
-  Theorem section4_gamma_accepting_maximal_reflects :
+  Theorem reach_ambiguity_gamma_accepting_maximal_reflects :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3187,14 +3187,14 @@ Section RightLinearGrammar.
   Proof.
     intros m s Hwf Hs q t w Htrace _ _ _.
     pose proof
-      (section4_gamma_support_trace_derivation_accepting_maximal_epsilon_simple
+      (reach_ambiguity_gamma_support_trace_derivation_accepting_maximal_epsilon_simple
          m s s t q Hwf Hs Htrace) as Heq.
     split; intro H.
     - rewrite <- Heq. exact H.
     - rewrite Heq. exact H.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_maximal_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_maximal_epsilon_simple :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3232,7 +3232,7 @@ Section RightLinearGrammar.
     - destruct u; reflexivity.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_maximal_epsilon_simple_complete :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_maximal_epsilon_simple_complete :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3267,7 +3267,7 @@ Section RightLinearGrammar.
     exact Hmax.
   Qed.
 
-  Theorem section4_gamma_support_prefix_trace_derivation_maximal_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_prefix_trace_derivation_maximal_epsilon_simple :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3305,7 +3305,7 @@ Section RightLinearGrammar.
     - destruct u; reflexivity.
   Qed.
 
-  Theorem section4_gamma_support_prefix_trace_derivation_maximal_epsilon_simple_complete :
+  Theorem reach_ambiguity_gamma_support_prefix_trace_derivation_maximal_epsilon_simple_complete :
     forall (m : @finite_enfa A) root p t q,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3433,7 +3433,7 @@ Section RightLinearGrammar.
 
   (** Gamma bridge soundness: if the ENFA accepts [w] from [s], then
       [Gamma(M)] derives [w] from the same start. *)
-  Theorem section4_gamma_support_language_sound :
+  Theorem reach_ambiguity_gamma_support_language_sound :
     forall (m : @finite_enfa A) s w,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3625,7 +3625,7 @@ Section RightLinearGrammar.
         * simpl. now rewrite Hword.
   Qed.
 
-  Theorem section4_gamma_support_valid_derivation_to_trace :
+  Theorem reach_ambiguity_gamma_support_valid_derivation_to_trace :
     forall (m : @finite_enfa A) root X d,
       rlg_derivation_valid (gamma_grammar_from m root) X d None ->
       exists q t,
@@ -3698,7 +3698,7 @@ Section RightLinearGrammar.
              ++ exact Hfinal.
   Qed.
 
-  Theorem section4_gamma_support_valid_derivation_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_valid_derivation_epsilon_simple :
     forall (m : @finite_enfa A) root X d t,
       rlg_derivation_valid (gamma_grammar_from m root) X d None ->
       gamma_trace_of_derivation m root d = Some t ->
@@ -3714,10 +3714,10 @@ Section RightLinearGrammar.
          m root X d t Hvalid Ht)
       as [q [Hround _]].
     rewrite <- Hround.
-    apply section4_gamma_support_trace_derivation_epsilon_simple.
+    apply reach_ambiguity_gamma_support_trace_derivation_epsilon_simple.
   Qed.
 
-  Theorem section4_gamma_support_valid_derivation_maximal_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_valid_derivation_maximal_epsilon_simple :
     forall (m : @finite_enfa A) root X d t,
       finite_enfa_wf m ->
       In X (fenfa_states m) ->
@@ -3735,11 +3735,11 @@ Section RightLinearGrammar.
          m root X d t Hvalid Ht)
       as [q [Hround [Htrace _]]].
     rewrite <- Hround in Hmax.
-    eapply section4_gamma_support_trace_derivation_maximal_epsilon_simple_complete;
+    eapply reach_ambiguity_gamma_support_trace_derivation_maximal_epsilon_simple_complete;
       eauto.
   Qed.
 
-  Theorem section4_gamma_support_valid_prefix_derivation_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_valid_prefix_derivation_epsilon_simple :
     forall (m : @finite_enfa A) root X d Y t,
       rlg_prefix_derivation_valid (gamma_grammar_from m root) X d Y ->
       gamma_trace_of_prefix_derivation m root d = Some t ->
@@ -3755,10 +3755,10 @@ Section RightLinearGrammar.
          m root X d Y t Hvalid Ht)
       as [Hround _].
     rewrite <- Hround.
-    apply section4_gamma_support_prefix_trace_derivation_epsilon_simple.
+    apply reach_ambiguity_gamma_support_prefix_trace_derivation_epsilon_simple.
   Qed.
 
-  Theorem section4_gamma_support_valid_prefix_derivation_maximal_epsilon_simple :
+  Theorem reach_ambiguity_gamma_support_valid_prefix_derivation_maximal_epsilon_simple :
     forall (m : @finite_enfa A) root X d Y t,
       finite_enfa_wf m ->
       In X (fenfa_states m) ->
@@ -3776,11 +3776,11 @@ Section RightLinearGrammar.
          m root X d Y t Hvalid Ht)
       as [Hround [Htrace _]].
     rewrite <- Hround in Hmax.
-    eapply section4_gamma_support_prefix_trace_derivation_maximal_epsilon_simple_complete;
+    eapply reach_ambiguity_gamma_support_prefix_trace_derivation_maximal_epsilon_simple_complete;
       eauto.
   Qed.
 
-  Theorem section4_gamma_support_trace_derivation_roundtrip :
+  Theorem reach_ambiguity_gamma_support_trace_derivation_roundtrip :
     forall (m : @finite_enfa A) root p q t,
       finite_enfa_wf m ->
       In p (fenfa_states m) ->
@@ -3803,7 +3803,7 @@ Section RightLinearGrammar.
   (** Language-equivalence part of the Gamma bridge.  The sound and complete
       directions show that ENFA acceptance of [w] from [s] is equivalent to
       acceptance by [Gamma(M)]. *)
-  Theorem section4_gamma_support_language_complete :
+  Theorem reach_ambiguity_gamma_support_language_complete :
     forall (m : @finite_enfa A) s w,
       rlg_accepts (gamma_grammar_from m s) w ->
       enfa_accepts_from m s w.
@@ -3813,7 +3813,7 @@ Section RightLinearGrammar.
     now apply gamma_trace_of_derivation_from in H.
   Qed.
 
-  Theorem section4_gamma_support_language_equiv :
+  Theorem reach_ambiguity_gamma_support_language_equiv :
     forall (m : @finite_enfa A) s w,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3821,15 +3821,15 @@ Section RightLinearGrammar.
       rlg_accepts (gamma_grammar_from m s) w.
   Proof.
     intros m s w Hwf Hs. split.
-    - now apply section4_gamma_support_language_sound.
-    - intros H. now apply section4_gamma_support_language_complete.
+    - now apply reach_ambiguity_gamma_support_language_sound.
+    - intros H. now apply reach_ambiguity_gamma_support_language_complete.
   Qed.
 
   (** Prime trace/derivation bridge for Gamma.  These theorems connect ENFA
       prime accepting, reach, and leaf traces with Gamma RLG prime derivations;
       later ambiguity-preservation and UFA/ReachUFA/LeafUFA bridges use them as
       their core interface. *)
-  Theorem section4_gamma_support_prime_accepting_derivation_of_trace :
+  Theorem reach_ambiguity_gamma_support_prime_accepting_derivation_of_trace :
     forall (m : @finite_enfa A) s q t w,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3846,17 +3846,17 @@ Section RightLinearGrammar.
   Proof.
     intros m s q t w Hwf Hs Htrace Hword Hfinal Hsimple Hmax.
     pose proof
-      (section4_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
+      (reach_ambiguity_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
     repeat split.
     - eapply gamma_derivation_of_trace_valid; eauto.
     - now rewrite gamma_derivation_of_trace_word.
-    - rewrite section4_gamma_support_trace_derivation_epsilon_simple.
+    - rewrite reach_ambiguity_gamma_support_trace_derivation_epsilon_simple.
       exact Hsimple.
     - apply (proj1 (Hreflect q t w Htrace Hword Hfinal Hsimple)).
       exact Hmax.
   Qed.
 
-  Theorem section4_gamma_support_prime_accepting_trace_of_derivation :
+  Theorem reach_ambiguity_gamma_support_prime_accepting_trace_of_derivation :
     forall (m : @finite_enfa A) s w d,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3874,8 +3874,8 @@ Section RightLinearGrammar.
   Proof.
     intros m s w d Hwf Hs [[Hvalid Hword] [Hsimple Hmax]].
     pose proof
-      (section4_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
-    destruct (section4_gamma_support_valid_derivation_to_trace
+      (reach_ambiguity_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
+    destruct (reach_ambiguity_gamma_support_valid_derivation_to_trace
                 m s s d Hvalid)
       as [q [t [Ht [Htrace [Htrace_word Hfinal]]]]].
     exists q, t.
@@ -3890,7 +3890,7 @@ Section RightLinearGrammar.
              (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
         exact Hsimple.
         pose proof
-          (section4_gamma_support_valid_derivation_epsilon_simple
+          (reach_ambiguity_gamma_support_valid_derivation_epsilon_simple
              m s s d t Hvalid Ht) as Heq.
         exact Heq.
       + destruct
@@ -3914,7 +3914,7 @@ Section RightLinearGrammar.
                (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
           - exact Hsimple.
           - pose proof
-              (section4_gamma_support_valid_derivation_epsilon_simple
+              (reach_ambiguity_gamma_support_valid_derivation_epsilon_simple
                  m s s d t Hvalid Ht) as Heq.
             exact Heq.
         }
@@ -3922,7 +3922,7 @@ Section RightLinearGrammar.
         exact Hmax.
   Qed.
 
-  Theorem section4_gamma_support_prime_reach_derivation_of_trace :
+  Theorem reach_ambiguity_gamma_support_prime_reach_derivation_of_trace :
     forall (m : @finite_enfa A) s q t w,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3940,11 +3940,11 @@ Section RightLinearGrammar.
     repeat split.
     - eapply gamma_prefix_derivation_of_trace_valid_from; eauto.
     - now rewrite gamma_prefix_derivation_of_trace_word.
-    - rewrite section4_gamma_support_prefix_trace_derivation_epsilon_simple.
+    - rewrite reach_ambiguity_gamma_support_prefix_trace_derivation_epsilon_simple.
       exact Hsimple.
   Qed.
 
-  Theorem section4_gamma_support_prime_reach_trace_of_derivation :
+  Theorem reach_ambiguity_gamma_support_prime_reach_trace_of_derivation :
     forall (m : @finite_enfa A) s w q d,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3972,12 +3972,12 @@ Section RightLinearGrammar.
            (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
       exact Hsimple.
       pose proof
-        (section4_gamma_support_valid_prefix_derivation_epsilon_simple
+        (reach_ambiguity_gamma_support_valid_prefix_derivation_epsilon_simple
            m s s d q t Hvalid Ht) as Heq.
       exact Heq.
   Qed.
 
-  Theorem section4_gamma_support_prime_leaf_derivation_of_trace :
+  Theorem reach_ambiguity_gamma_support_prime_leaf_derivation_of_trace :
     forall (m : @finite_enfa A) s q t prefix,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -3993,12 +3993,12 @@ Section RightLinearGrammar.
   Proof.
     intros m s q t prefix Hwf Hs Htrace Hword Hsimple Hmax.
     exists q. split.
-    - eapply section4_gamma_support_prime_reach_derivation_of_trace; eauto.
-    - eapply section4_gamma_support_prefix_trace_derivation_maximal_epsilon_simple;
+    - eapply reach_ambiguity_gamma_support_prime_reach_derivation_of_trace; eauto.
+    - eapply reach_ambiguity_gamma_support_prefix_trace_derivation_maximal_epsilon_simple;
         eauto.
   Qed.
 
-  Theorem section4_gamma_support_prime_leaf_trace_of_derivation :
+  Theorem reach_ambiguity_gamma_support_prime_leaf_trace_of_derivation :
     forall (m : @finite_enfa A) s prefix d,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -4015,11 +4015,11 @@ Section RightLinearGrammar.
   Proof.
     intros m s prefix d Hwf Hs [q [Hreach Hmax]].
     destruct
-      (section4_gamma_support_prime_reach_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_reach_trace_of_derivation
          m s prefix q d Hwf Hs Hreach)
       as [t [Ht [Htrace [Hword Hsimple]]]].
     exists q, t. repeat split; auto.
-    eapply section4_gamma_support_valid_prefix_derivation_maximal_epsilon_simple;
+    eapply reach_ambiguity_gamma_support_valid_prefix_derivation_maximal_epsilon_simple;
       eauto.
     exact (proj1 Hreach).
   Qed.
@@ -4100,7 +4100,7 @@ Section RightLinearGrammar.
     intros m s word_eqb w d Hwf Hs [Hword_sound _]
       Hvalid Hword Hsimple Hmax.
     pose proof
-      (section4_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
+      (reach_ambiguity_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
     destruct
       (gamma_trace_of_valid_derivation_some m s s d Hvalid)
       as [t Ht].
@@ -4120,7 +4120,7 @@ Section RightLinearGrammar.
              (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
         * exact Hsimple.
         * pose proof
-            (section4_gamma_support_valid_derivation_epsilon_simple
+            (reach_ambiguity_gamma_support_valid_derivation_epsilon_simple
                m s s d t Hvalid Ht) as Heq.
           exact Heq.
       + rewrite <- Hround in Hmax.
@@ -4133,7 +4133,7 @@ Section RightLinearGrammar.
                (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
           - exact Hsimple.
           - pose proof
-              (section4_gamma_support_valid_derivation_epsilon_simple
+              (reach_ambiguity_gamma_support_valid_derivation_epsilon_simple
                  m s s d t Hvalid Ht) as Heq.
             exact Heq.
         }
@@ -4141,7 +4141,7 @@ Section RightLinearGrammar.
         exact Hmax.
   Qed.
 
-  Theorem section4_lemma3_gamma_da_prime_count_eq_with_enumeration :
+  Theorem reach_ambiguity_gamma_da_prime_count_eq_with_enumeration :
     forall (m : @finite_enfa A) s word_eqb w,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4171,7 +4171,7 @@ Section RightLinearGrammar.
       rewrite Hstart. simpl. auto.
     }
     pose proof
-      (section4_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
+      (reach_ambiguity_gamma_accepting_maximal_reflects m s Hwf Hs) as Hreflect.
     rewrite <- enfa_da_prime_witnesses_length.
     unfold rlg_da_prime_count.
     set (xs := enfa_da_prime_witnesses m w).
@@ -4256,7 +4256,7 @@ Section RightLinearGrammar.
         + apply andb_true_iff. split.
           * apply Hword_complete.
             now rewrite gamma_derivation_of_trace_word.
-          * rewrite section4_gamma_support_trace_derivation_epsilon_simple.
+          * rewrite reach_ambiguity_gamma_support_trace_derivation_epsilon_simple.
             exact Hsimple.
         + apply (proj1 (Hreflect q t w Htrace Htrace_word Hfinal Hsimple)).
           exact Haccmax.
@@ -4275,7 +4275,7 @@ Section RightLinearGrammar.
            (S (enfa_trace_bound m w)) s d Hd)
         as Hvalid_derivation.
       destruct
-        (section4_gamma_support_valid_derivation_to_trace
+        (reach_ambiguity_gamma_support_valid_derivation_to_trace
            m s s d Hvalid_derivation)
         as [q [t [Ht [Htrace [Htrace_word Hfinal]]]]].
       destruct
@@ -4298,7 +4298,7 @@ Section RightLinearGrammar.
              (gamma_grammar_from m s) (fenfa_state_eqb m) s d).
         - exact Hsimple.
         - pose proof
-            (section4_gamma_support_valid_derivation_epsilon_simple
+            (reach_ambiguity_gamma_support_valid_derivation_epsilon_simple
                m s s d t Hvalid_derivation Ht) as Heq.
           exact Heq.
       }
@@ -4334,7 +4334,7 @@ Section RightLinearGrammar.
     lia.
   Qed.
 
-  Theorem section4_lemma3_gamma_dra_prime_count_eq_with_enumeration :
+  Theorem reach_ambiguity_gamma_dra_prime_count_eq_with_enumeration :
     forall (m : @finite_enfa A) s word_eqb w q,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4446,7 +4446,7 @@ Section RightLinearGrammar.
           * rewrite (gamma_prefix_derivation_of_trace_end_valid
                        m s s t q Htrace).
             apply fenfa_state_eqb_complete. reflexivity.
-        + rewrite section4_gamma_support_prefix_trace_derivation_epsilon_simple.
+        + rewrite reach_ambiguity_gamma_support_prefix_trace_derivation_epsilon_simple.
           exact Hsimple.
     }
     assert (Hfrom : incl (filter p enum) (map f xs)).
@@ -4480,7 +4480,7 @@ Section RightLinearGrammar.
         - exact Hsimple.
       }
       destruct
-        (section4_gamma_support_prime_reach_trace_of_derivation
+        (reach_ambiguity_gamma_support_prime_reach_trace_of_derivation
            m s w q d Hwf Hs Hprime)
         as [t [Ht [Htrace [Htrace_word_w HsimpleE]]]].
       destruct
@@ -4509,7 +4509,7 @@ Section RightLinearGrammar.
     lia.
   Qed.
 
-  Theorem section4_lemma3_gamma_leaf_prime_count_eq_with_enumeration :
+  Theorem reach_ambiguity_gamma_leaf_prime_count_eq_with_enumeration :
     forall (m : @finite_enfa A) s word_eqb w,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4630,9 +4630,9 @@ Section RightLinearGrammar.
         + apply andb_true_iff. split.
           * apply Hword_complete.
             now rewrite gamma_prefix_derivation_of_trace_word.
-          * rewrite section4_gamma_support_prefix_trace_derivation_epsilon_simple.
+          * rewrite reach_ambiguity_gamma_support_prefix_trace_derivation_epsilon_simple.
             exact Hsimple.
-        + eapply section4_gamma_support_prefix_trace_derivation_maximal_epsilon_simple;
+        + eapply reach_ambiguity_gamma_support_prefix_trace_derivation_maximal_epsilon_simple;
             eauto.
     }
     assert (Hfrom : incl (filter p enum) (map f xs)).
@@ -4662,7 +4662,7 @@ Section RightLinearGrammar.
         - exact Hmax.
       }
       destruct
-        (section4_gamma_support_prime_leaf_trace_of_derivation
+        (reach_ambiguity_gamma_support_prime_leaf_trace_of_derivation
            m s w d Hwf Hs Hleaf)
         as [q [t [Ht [Htrace [Htrace_word_w [HsimpleE HmaxE]]]]]].
       destruct
@@ -4700,7 +4700,7 @@ Section RightLinearGrammar.
     lia.
   Qed.
 
-  Theorem section4_lemma3_gamma_prime_counts_eq_with_enumeration :
+  Theorem reach_ambiguity_gamma_prime_counts_eq_with_enumeration :
     forall (m : @finite_enfa A) s word_eqb w q,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4745,12 +4745,12 @@ Section RightLinearGrammar.
     intros m s word_eqb w q Hwf Hstart Henum Hnodup Hwordeq
       Hda_nodup Hprefix_nodup.
     split.
-    - eapply section4_lemma3_gamma_da_prime_count_eq_with_enumeration;
+    - eapply reach_ambiguity_gamma_da_prime_count_eq_with_enumeration;
         eauto.
     - split.
-      + eapply section4_lemma3_gamma_dra_prime_count_eq_with_enumeration;
+      + eapply reach_ambiguity_gamma_dra_prime_count_eq_with_enumeration;
           eauto.
-      + eapply section4_lemma3_gamma_leaf_prime_count_eq_with_enumeration;
+      + eapply reach_ambiguity_gamma_leaf_prime_count_eq_with_enumeration;
           eauto.
   Qed.
 
@@ -4788,7 +4788,7 @@ Section RightLinearGrammar.
     apply gamma_productions_NoDup_with_alphabet_nodup; auto.
   Qed.
 
-  Theorem section4_lemma3_gamma_da_prime_count_eq_with_alphabet_nodup :
+  Theorem reach_ambiguity_gamma_da_prime_count_eq_with_alphabet_nodup :
     forall (m : @finite_enfa A) s word_eqb w,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4803,17 +4803,17 @@ Section RightLinearGrammar.
         w.
   Proof.
     intros m s word_eqb w Hwf Hstart Halphabet Hwordeq.
-    eapply section4_lemma3_gamma_da_prime_count_eq_with_enumeration.
+    eapply reach_ambiguity_gamma_da_prime_count_eq_with_enumeration.
     - exact Hwf.
     - exact Hstart.
-    - eapply section4_enfa_prime_trace_enumerated_from_single_start; eauto.
-    - eapply section4_enfa_started_traces_nodup_single_start; eauto.
+    - eapply reach_ambiguity_enfa_prime_trace_enumerated_from_single_start; eauto.
+    - eapply reach_ambiguity_enfa_started_traces_nodup_single_start; eauto.
     - exact Hwordeq.
     - eapply gamma_rlg_derivations_from_fuel_NoDup_with_alphabet_nodup;
         eauto.
   Qed.
 
-  Theorem section4_lemma3_gamma_dra_prime_count_eq_with_alphabet_nodup :
+  Theorem reach_ambiguity_gamma_dra_prime_count_eq_with_alphabet_nodup :
     forall (m : @finite_enfa A) s word_eqb w q,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4829,17 +4829,17 @@ Section RightLinearGrammar.
         q.
   Proof.
     intros m s word_eqb w q Hwf Hstart Halphabet Hwordeq.
-    eapply section4_lemma3_gamma_dra_prime_count_eq_with_enumeration.
+    eapply reach_ambiguity_gamma_dra_prime_count_eq_with_enumeration.
     - exact Hwf.
     - exact Hstart.
-    - eapply section4_enfa_prime_trace_enumerated_from_single_start; eauto.
-    - eapply section4_enfa_started_traces_nodup_single_start; eauto.
+    - eapply reach_ambiguity_enfa_prime_trace_enumerated_from_single_start; eauto.
+    - eapply reach_ambiguity_enfa_started_traces_nodup_single_start; eauto.
     - exact Hwordeq.
     - eapply gamma_rlg_prefix_derivations_from_fuel_NoDup_with_alphabet_nodup;
         eauto.
   Qed.
 
-  Theorem section4_lemma3_gamma_leaf_prime_count_eq_with_alphabet_nodup :
+  Theorem reach_ambiguity_gamma_leaf_prime_count_eq_with_alphabet_nodup :
     forall (m : @finite_enfa A) s word_eqb w,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4854,17 +4854,17 @@ Section RightLinearGrammar.
         w.
   Proof.
     intros m s word_eqb w Hwf Hstart Halphabet Hwordeq.
-    eapply section4_lemma3_gamma_leaf_prime_count_eq_with_enumeration.
+    eapply reach_ambiguity_gamma_leaf_prime_count_eq_with_enumeration.
     - exact Hwf.
     - exact Hstart.
-    - eapply section4_enfa_prime_trace_enumerated_from_single_start; eauto.
-    - eapply section4_enfa_started_traces_nodup_single_start; eauto.
+    - eapply reach_ambiguity_enfa_prime_trace_enumerated_from_single_start; eauto.
+    - eapply reach_ambiguity_enfa_started_traces_nodup_single_start; eauto.
     - exact Hwordeq.
     - eapply gamma_rlg_prefix_derivations_from_fuel_NoDup_with_alphabet_nodup;
         eauto.
   Qed.
 
-  Theorem section4_lemma3_gamma_prime_counts_eq_with_alphabet_nodup :
+  Theorem reach_ambiguity_gamma_prime_counts_eq_with_alphabet_nodup :
     forall (m : @finite_enfa A) s word_eqb w q,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4895,29 +4895,29 @@ Section RightLinearGrammar.
   Proof.
     intros m s word_eqb w q Hwf Hstart Halphabet Hwordeq.
     split.
-    - eapply section4_lemma3_gamma_da_prime_count_eq_with_alphabet_nodup;
+    - eapply reach_ambiguity_gamma_da_prime_count_eq_with_alphabet_nodup;
         eauto.
     - split.
-      + eapply section4_lemma3_gamma_dra_prime_count_eq_with_alphabet_nodup;
+      + eapply reach_ambiguity_gamma_dra_prime_count_eq_with_alphabet_nodup;
           eauto.
-      + eapply section4_lemma3_gamma_leaf_prime_count_eq_with_alphabet_nodup;
+      + eapply reach_ambiguity_gamma_leaf_prime_count_eq_with_alphabet_nodup;
           eauto.
   Qed.
 
   (* Aliases for the accepting-maximal reflection formulations. *)
-  Definition section4_lemma3_gamma_da_prime_count_eq_with_enumeration_under_accepting_maximal_reflection :=
-    section4_lemma3_gamma_da_prime_count_eq_with_enumeration.
+  Definition reach_ambiguity_gamma_da_prime_count_eq_with_enumeration_under_accepting_maximal_reflection :=
+    reach_ambiguity_gamma_da_prime_count_eq_with_enumeration.
 
-  Definition section4_lemma3_gamma_prime_counts_eq_with_enumeration_under_accepting_maximal_reflection :=
-    section4_lemma3_gamma_prime_counts_eq_with_enumeration.
+  Definition reach_ambiguity_gamma_prime_counts_eq_with_enumeration_under_accepting_maximal_reflection :=
+    reach_ambiguity_gamma_prime_counts_eq_with_enumeration.
 
-  Definition section4_lemma3_gamma_da_prime_count_eq_with_alphabet_nodup_under_accepting_maximal_reflection :=
-    section4_lemma3_gamma_da_prime_count_eq_with_alphabet_nodup.
+  Definition reach_ambiguity_gamma_da_prime_count_eq_with_alphabet_nodup_under_accepting_maximal_reflection :=
+    reach_ambiguity_gamma_da_prime_count_eq_with_alphabet_nodup.
 
-  Definition section4_lemma3_gamma_prime_counts_eq_with_alphabet_nodup_under_accepting_maximal_reflection :=
-    section4_lemma3_gamma_prime_counts_eq_with_alphabet_nodup.
+  Definition reach_ambiguity_gamma_prime_counts_eq_with_alphabet_nodup_under_accepting_maximal_reflection :=
+    reach_ambiguity_gamma_prime_counts_eq_with_alphabet_nodup.
 
-  Theorem section4_gamma_support_reachufa_to_rlg_reach_unambiguous :
+  Theorem reach_ambiguity_gamma_support_reachufa_to_rlg_reach_unambiguous :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -4932,11 +4932,11 @@ Section RightLinearGrammar.
       rewrite Hstart. simpl. auto.
     }
     destruct
-      (section4_gamma_support_prime_reach_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_reach_trace_of_derivation
          m s prefix q d1 Hwf Hs Hd1)
       as [t1 [Ht1 [Htrace1 [Hword1 Hsimple1]]]].
     destruct
-      (section4_gamma_support_prime_reach_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_reach_trace_of_derivation
          m s prefix q d2 Hwf Hs Hd2)
       as [t2 [Ht2 [Htrace2 [Hword2 Hsimple2]]]].
     assert (Hq : In q (fenfa_states m)).
@@ -4983,7 +4983,7 @@ Section RightLinearGrammar.
     rewrite <- Hround1, <- Hround2. reflexivity.
   Qed.
 
-  Theorem section4_gamma_support_rlg_reach_unambiguous_to_reachufa :
+  Theorem reach_ambiguity_gamma_support_rlg_reach_unambiguous_to_reachufa :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5046,7 +5046,7 @@ Section RightLinearGrammar.
           (trace_end s t1) d1).
       {
         unfold d1.
-        eapply section4_gamma_support_prime_reach_derivation_of_trace.
+        eapply reach_ambiguity_gamma_support_prime_reach_derivation_of_trace.
         - exact Hwf.
         - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
         - exact Htrace1.
@@ -5060,7 +5060,7 @@ Section RightLinearGrammar.
       {
         unfold d2.
         rewrite Hend2 in Htrace2.
-        eapply section4_gamma_support_prime_reach_derivation_of_trace.
+        eapply reach_ambiguity_gamma_support_prime_reach_derivation_of_trace.
         - exact Hwf.
         - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
         - exact Htrace2.
@@ -5079,7 +5079,7 @@ Section RightLinearGrammar.
       inversion Hteq. reflexivity.
   Qed.
 
-  Theorem section4_gamma_support_ufa_to_rlg_unambiguous :
+  Theorem reach_ambiguity_gamma_support_ufa_to_rlg_unambiguous :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5094,11 +5094,11 @@ Section RightLinearGrammar.
       rewrite Hstart. simpl. auto.
     }
     destruct
-      (section4_gamma_support_prime_accepting_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_accepting_trace_of_derivation
          m s w d1 Hwf Hs Hd1)
       as [q1 [t1 [Ht1 [Htrace1 [Hword1 [Hfinal1 [Hsimple1 Hmax1]]]]]]].
     destruct
-      (section4_gamma_support_prime_accepting_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_accepting_trace_of_derivation
          m s w d2 Hwf Hs Hd2)
       as [q2 [t2 [Ht2 [Htrace2 [Hword2 [Hfinal2 [Hsimple2 Hmax2]]]]]]].
     assert (Hq1 : In q1 (fenfa_states m)).
@@ -5202,7 +5202,7 @@ Section RightLinearGrammar.
       unfold enfa_da_prime_word in Hda. lia.
   Qed.
 
-  Theorem section4_gamma_support_rlg_unambiguous_to_ufa :
+  Theorem reach_ambiguity_gamma_support_rlg_unambiguous_to_ufa :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5272,7 +5272,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d1).
         {
           unfold d1.
-          eapply section4_gamma_support_prime_accepting_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_accepting_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace1.
@@ -5286,7 +5286,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d2).
         {
           unfold d2.
-          eapply section4_gamma_support_prime_accepting_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_accepting_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace2.
@@ -5346,7 +5346,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d1).
         {
           unfold d1.
-          eapply section4_gamma_support_prime_accepting_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_accepting_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace1.
@@ -5360,7 +5360,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d2).
         {
           unfold d2.
-          eapply section4_gamma_support_prime_accepting_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_accepting_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace2.
@@ -5375,7 +5375,7 @@ Section RightLinearGrammar.
         contradiction.
   Qed.
 
-  Theorem section4_gamma_support_leafufa_to_rlg_leaf_unambiguous :
+  Theorem reach_ambiguity_gamma_support_leafufa_to_rlg_leaf_unambiguous :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5390,11 +5390,11 @@ Section RightLinearGrammar.
       rewrite Hstart. simpl. auto.
     }
     destruct
-      (section4_gamma_support_prime_leaf_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_leaf_trace_of_derivation
          m s prefix d1 Hwf Hs Hd1)
       as [q1 [t1 [Ht1 [Htrace1 [Hword1 [Hsimple1 Hmax1]]]]]].
     destruct
-      (section4_gamma_support_prime_leaf_trace_of_derivation
+      (reach_ambiguity_gamma_support_prime_leaf_trace_of_derivation
          m s prefix d2 Hwf Hs Hd2)
       as [q2 [t2 [Ht2 [Htrace2 [Hword2 [Hsimple2 Hmax2]]]]]].
     assert (Hq1 : In q1 (fenfa_states m)).
@@ -5480,7 +5480,7 @@ Section RightLinearGrammar.
       unfold enfa_leaf_prime_word in Hleaf_count. lia.
   Qed.
 
-  Theorem section4_gamma_support_rlg_leaf_unambiguous_to_leafufa :
+  Theorem reach_ambiguity_gamma_support_rlg_leaf_unambiguous_to_leafufa :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5550,7 +5550,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d1).
         {
           unfold d1.
-          eapply section4_gamma_support_prime_leaf_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_leaf_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace1.
@@ -5563,7 +5563,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d2).
         {
           unfold d2.
-          eapply section4_gamma_support_prime_leaf_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_leaf_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace2.
@@ -5627,7 +5627,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d1).
         {
           unfold d1.
-          eapply section4_gamma_support_prime_leaf_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_leaf_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace1.
@@ -5640,7 +5640,7 @@ Section RightLinearGrammar.
             (gamma_grammar_from m s) (fenfa_state_eqb m) w d2).
         {
           unfold d2.
-          eapply section4_gamma_support_prime_leaf_derivation_of_trace.
+          eapply reach_ambiguity_gamma_support_prime_leaf_derivation_of_trace.
           - exact Hwf.
           - eapply fenfa_starts_in_states; eauto. rewrite Hstart. simpl. auto.
           - exact Htrace2.
@@ -5665,7 +5665,7 @@ Section RightLinearGrammar.
   (** Bidirectional Gamma bridge wrappers.  These iff theorems package the six
       directions above with well-formedness, single-start, enumeration
       completeness, and nodup hypotheses. *)
-  Theorem section4_gamma_support_ufa_rlg_unambiguous_iff :
+  Theorem reach_ambiguity_gamma_support_ufa_rlg_unambiguous_iff :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5675,11 +5675,11 @@ Section RightLinearGrammar.
   Proof.
     intros m s Hwf Hstart Henum Hnodup.
     split.
-    - eapply section4_gamma_support_ufa_to_rlg_unambiguous; eauto.
-    - eapply section4_gamma_support_rlg_unambiguous_to_ufa; eauto.
+    - eapply reach_ambiguity_gamma_support_ufa_to_rlg_unambiguous; eauto.
+    - eapply reach_ambiguity_gamma_support_rlg_unambiguous_to_ufa; eauto.
   Qed.
 
-  Theorem section4_gamma_support_reachufa_rlg_reach_unambiguous_iff :
+  Theorem reach_ambiguity_gamma_support_reachufa_rlg_reach_unambiguous_iff :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5689,11 +5689,11 @@ Section RightLinearGrammar.
   Proof.
     intros m s Hwf Hstart Henum Hnodup.
     split.
-    - eapply section4_gamma_support_reachufa_to_rlg_reach_unambiguous; eauto.
-    - eapply section4_gamma_support_rlg_reach_unambiguous_to_reachufa; eauto.
+    - eapply reach_ambiguity_gamma_support_reachufa_to_rlg_reach_unambiguous; eauto.
+    - eapply reach_ambiguity_gamma_support_rlg_reach_unambiguous_to_reachufa; eauto.
   Qed.
 
-  Theorem section4_gamma_support_leafufa_rlg_leaf_unambiguous_iff :
+  Theorem reach_ambiguity_gamma_support_leafufa_rlg_leaf_unambiguous_iff :
     forall (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -5703,15 +5703,15 @@ Section RightLinearGrammar.
   Proof.
     intros m s Hwf Hstart Henum Hnodup.
     split.
-    - eapply section4_gamma_support_leafufa_to_rlg_leaf_unambiguous; eauto.
-    - eapply section4_gamma_support_rlg_leaf_unambiguous_to_leafufa; eauto.
+    - eapply reach_ambiguity_gamma_support_leafufa_to_rlg_leaf_unambiguous; eauto.
+    - eapply reach_ambiguity_gamma_support_rlg_leaf_unambiguous_to_leafufa; eauto.
   Qed.
 
   (** Structured "M ambiguous iff Gamma(M) ambiguous" support.  The sound
       direction maps distinct ENFA accepting trace/end pairs to distinct RLG
       derivations; the complete direction reconstructs ENFA trace/end pairs
       from distinct accepting RLG derivations. *)
-  Theorem section4_gamma_support_ambiguity_preservation_sound :
+  Theorem reach_ambiguity_gamma_support_ambiguity_preservation_sound :
     forall (m : @finite_enfa A) root s q1 q2 t1 t2,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -5740,7 +5740,7 @@ Section RightLinearGrammar.
     - apply gamma_derivation_of_trace_word.
   Qed.
 
-  Theorem section4_gamma_support_ambiguity_preservation_complete :
+  Theorem reach_ambiguity_gamma_support_ambiguity_preservation_complete :
     forall (m : @finite_enfa A) root s d1 d2,
       rlg_derivation_valid (gamma_grammar_from m root) s d1 None ->
       rlg_derivation_valid (gamma_grammar_from m root) s d2 None ->

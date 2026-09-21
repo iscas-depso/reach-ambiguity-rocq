@@ -1,8 +1,8 @@
-﻿From Stdlib Require Import List Bool Arith Lia.
+From Stdlib Require Import List Bool Arith Lia.
 Import ListNotations.
 
 From PositionAutomata.Core Require Import Syntax.
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 From PositionAutomata.Regex Require Import RegexReDoS RegexSSS.
 From PositionAutomata.Automata Require Import EpsilonNFA.
 From PositionAutomata.Grammar Require Import RightLinearGrammar.
@@ -12,7 +12,7 @@ From PositionAutomata.Grammar Require Import RightLinearGrammar.
     Section 4.2 decision-problem predicates are included alongside the LR
     machine and Gamma bridge interfaces. *)
 
-Section Section4LR.
+Section AmbiguityLR.
   Context {A : Type}.
 
   Definition finite_nfa_to_enfa (m : @finite_nfa A) : @finite_enfa A :=
@@ -43,6 +43,25 @@ Section Section4LR.
     intros m q. reflexivity.
   Qed.
 
+  Theorem finite_nfa_to_enfa_wf :
+    forall (m : @finite_nfa A),
+      finite_nfa_wf m ->
+      finite_enfa_wf (finite_nfa_to_enfa m).
+  Proof.
+    intros m Hwf.
+    constructor.
+    - exact (fnfa_states_nodup m Hwf).
+    - exact (fnfa_starts_in_states m Hwf).
+    - intros q [a |] q' Hq Hstep; simpl in Hstep.
+      + eapply fnfa_steps_in_states; eauto.
+      + contradiction.
+    - intros q a q' Hq Hstep. simpl in Hstep.
+      eapply fnfa_steps_in_alphabet; eauto.
+    - intros q [a |] Hq; simpl.
+      + eapply fnfa_step_targets_nodup; eauto.
+      + constructor.
+  Qed.
+
   (** Definition 7 regex-level specs.  [Mpos(E)] and [Msss(E)] carry the weak
       and strong reach-unambiguous notions, plus the weak deterministic and
       leaf-unambiguous characterizations. *)
@@ -68,13 +87,13 @@ Section Section4LR.
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A) : Prop :=
-    enfa_LeafUFA (regex_Mpos alphabet label_matches r).
+    enfa_accessibly_deterministic (regex_Mpos alphabet label_matches r).
 
   Definition regex_weak_leaf_unambiguous
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (r : regex A) : Prop :=
-    regex_weak_deterministic alphabet label_matches r.
+    enfa_LeafUFA (regex_Mpos alphabet label_matches r).
 
   Definition regex_leaf_unambiguous
       (alphabet : list A)
@@ -88,7 +107,7 @@ Section Section4LR.
       (r : regex A) : Prop :=
     regex_leaf_unambiguous alphabet label_matches r.
 
-  Theorem section4_definition7_regex_characterizations :
+  Theorem reach_ambiguity_regex_characterizations :
     forall alphabet label_matches (r : regex A),
       regex_weak_reach_unambiguous alphabet label_matches r =
         enfa_ReachUFA (regex_Mpos alphabet label_matches r) /\
@@ -100,6 +119,24 @@ Section Section4LR.
         enfa_LeafUFA (@regex_Msss A alphabet label_matches r).
   Proof.
     intros. repeat split; reflexivity.
+  Qed.
+
+  (** This is the non-definitional form of the classical position-automaton
+      characterization: weak leaf-unambiguity is exactly determinism on the
+      accessible portion of the position automaton. *)
+  Theorem reach_ambiguity_regex_weak_leaf_iff_weak_deterministic :
+    forall alphabet label_matches (r : regex A),
+      finite_nfa_wf (regex_finite_position_nfa alphabet label_matches r) ->
+      (regex_weak_leaf_unambiguous alphabet label_matches r <->
+       regex_weak_deterministic alphabet label_matches r).
+  Proof.
+    intros alphabet label_matches r Hwf.
+    unfold regex_weak_leaf_unambiguous, regex_weak_deterministic, regex_Mpos.
+    eapply reach_ambiguity_epsilon_free_leafufa_iff_accessibly_deterministic
+      with (s := None).
+    - exact (finite_nfa_to_enfa_wf _ Hwf).
+    - apply finite_nfa_to_enfa_epsilon_free.
+    - reflexivity.
   Qed.
 
   Inductive lr_lookahead : Type :=
@@ -916,7 +953,7 @@ Section Section4LR.
   (** Definition 10 basic machine characterization: the reduce/nonreduce
       states and full state list of [lr1_machine_of_enfa] are exactly the item
       sets generated from the ENFA above. *)
-  Theorem section4_definition10_lr1_machine_characterization :
+  Theorem reach_ambiguity_lr1_machine_characterization :
     forall A_eq_dec (m : @finite_enfa A),
       lr1_reduce_states _ (lr1_machine_of_enfa A_eq_dec m) =
         lr1_reduce_items m /\
@@ -931,7 +968,7 @@ Section Section4LR.
   (** Definition 10 unfolded specs.  The following membership theorems
       characterize start/final/alphabet entries, reduce/nonreduce items,
       reduce/shift transitions, and the step function. *)
-  Theorem section4_definition10_start_state_membership :
+  Theorem reach_ambiguity_start_state_membership :
     forall A_eq_dec (m : @finite_enfa A) it,
       In it
         (enfa_start
@@ -953,7 +990,7 @@ Section Section4LR.
       + simpl. auto.
   Qed.
 
-  Theorem section4_definition10_final_state_membership :
+  Theorem reach_ambiguity_final_state_membership :
     forall A_eq_dec (m : @finite_enfa A) it,
       enfa_final
         (fenfa_base (lr1_enfa _ (lr1_machine_of_enfa A_eq_dec m))) it =
@@ -970,7 +1007,7 @@ Section Section4LR.
       apply eqb_of_dec_complete. reflexivity.
   Qed.
 
-  Theorem section4_definition10_alphabet_membership :
+  Theorem reach_ambiguity_alphabet_membership :
     forall A_eq_dec (m : @finite_enfa A) x,
       In x (fenfa_alphabet
         (lr1_enfa _ (lr1_machine_of_enfa A_eq_dec m))) <->
@@ -995,7 +1032,7 @@ Section Section4LR.
           apply in_map_iff. exists q. auto.
   Qed.
 
-  Theorem section4_definition10_reduce_item_membership :
+  Theorem reach_ambiguity_reduce_item_membership :
     forall (m : @finite_enfa A) it,
       In it (lr1_reduce_items m) <-> lr1_reduce_item_spec m it.
   Proof.
@@ -1043,7 +1080,7 @@ Section Section4LR.
           apply in_map_iff. exists q. split; auto.
   Qed.
 
-  Theorem section4_definition10_nonreduce_item_membership :
+  Theorem reach_ambiguity_nonreduce_item_membership :
     forall (m : @finite_enfa A) it,
       In it (lr1_nonreduce_items m) <-> lr1_nonreduce_item_spec m it.
   Proof.
@@ -1129,7 +1166,7 @@ Section Section4LR.
           -- simpl. auto.
   Qed.
 
-  Theorem section4_definition10_reduce_transition_membership :
+  Theorem reach_ambiguity_reduce_transition_membership :
     forall (m : @finite_enfa A) tr,
       In tr (lr1_reduce_transitions m) <->
       lr1_reduce_transition_spec m tr.
@@ -1196,7 +1233,7 @@ Section Section4LR.
           -- simpl. auto.
   Qed.
 
-  Theorem section4_definition10_shift_transition_membership :
+  Theorem reach_ambiguity_shift_transition_membership :
     forall (m : @finite_enfa A) tr,
       In tr (lr1_shift_transitions m) <->
       lr1_shift_transition_spec m tr.
@@ -1263,7 +1300,7 @@ Section Section4LR.
           -- simpl. auto.
   Qed.
 
-  Theorem section4_definition10_step_membership :
+  Theorem reach_ambiguity_step_membership :
     forall A_eq_dec (m : @finite_enfa A) p l q,
       In q (lr1_step m A_eq_dec p l) <->
       In (p, l, q) (lr1_transitions m).
@@ -1295,7 +1332,7 @@ Section Section4LR.
       + reflexivity.
   Qed.
 
-  Theorem section4_definition10_lr1_machine_full_characterization :
+  Theorem reach_ambiguity_lr1_machine_full_characterization :
     forall A_eq_dec (m : @finite_enfa A),
       (forall it,
         In it
@@ -1330,27 +1367,27 @@ Section Section4LR.
     intros A_eq_dec m.
     split.
     - intro it0.
-      apply (section4_definition10_start_state_membership A_eq_dec m it0).
+      apply (reach_ambiguity_start_state_membership A_eq_dec m it0).
     - split.
       + intro it1.
-        apply (section4_definition10_final_state_membership A_eq_dec m it1).
+        apply (reach_ambiguity_final_state_membership A_eq_dec m it1).
       + split.
         * intro x0.
-          apply (section4_definition10_alphabet_membership A_eq_dec m x0).
+          apply (reach_ambiguity_alphabet_membership A_eq_dec m x0).
         * split.
           -- intro it2.
-             apply (section4_definition10_reduce_item_membership m it2).
+             apply (reach_ambiguity_reduce_item_membership m it2).
           -- split.
              ++ intro it3.
-                apply (section4_definition10_nonreduce_item_membership m it3).
+                apply (reach_ambiguity_nonreduce_item_membership m it3).
              ++ split.
                 ** intro tr0.
-                   apply (section4_definition10_reduce_transition_membership m tr0).
+                   apply (reach_ambiguity_reduce_transition_membership m tr0).
                 ** split.
                    --- intro tr1.
-                       apply (section4_definition10_shift_transition_membership m tr1).
+                       apply (reach_ambiguity_shift_transition_membership m tr1).
                    --- intros p l q.
-                       apply (section4_definition10_step_membership A_eq_dec m p l q).
+                       apply (reach_ambiguity_step_membership A_eq_dec m p l q).
   Qed.
 
   (** Lemma 3 I projection interface.
@@ -1471,31 +1508,31 @@ Section Section4LR.
     simpl.
     econstructor.
     - apply (proj2
-        (section4_definition10_step_membership
+        (reach_ambiguity_step_membership
            A_eq_dec m (LRState p LAEpsilon) None
            (LRBefore p (lr_symbol_of_label l) q LAEpsilon))).
       apply in_or_app. left.
-      apply (proj2 (section4_definition10_reduce_transition_membership m _)).
+      apply (proj2 (reach_ambiguity_reduce_transition_membership m _)).
       exists LAEpsilon, p, l, q.
       repeat split; simpl; auto.
     - econstructor.
       + apply (proj2
-          (section4_definition10_step_membership
+          (reach_ambiguity_step_membership
              A_eq_dec m (LRBefore p (lr_symbol_of_label l) q LAEpsilon)
              (Some (lr_symbol_of_label l))
              (LRAfterSymbol p (lr_symbol_of_label l) q LAEpsilon))).
         apply in_or_app. right.
-        apply (proj2 (section4_definition10_shift_transition_membership m _)).
+        apply (proj2 (reach_ambiguity_shift_transition_membership m _)).
         exists LAEpsilon, p, l, q.
         repeat split; simpl; auto.
       + econstructor.
         * apply (proj2
-            (section4_definition10_step_membership
+            (reach_ambiguity_step_membership
                A_eq_dec m
                (LRAfterSymbol p (lr_symbol_of_label l) q LAEpsilon)
                None (LRState q LAEpsilon))).
           apply in_or_app. left.
-          apply (proj2 (section4_definition10_reduce_transition_membership m _)).
+          apply (proj2 (reach_ambiguity_reduce_transition_membership m _)).
           exists LAEpsilon, p, l, q.
           repeat split; simpl; auto.
         * constructor.
@@ -1597,7 +1634,7 @@ Section Section4LR.
     - rewrite lr1_project_trace_observable_word. exact Hword.
   Qed.
 
-  Theorem section4_lemma4_I_lr1_leaf_preservation :
+  Theorem reach_ambiguity_lr1_leaf_preservation :
     forall A_eq_dec (m : @finite_enfa A) w,
       lr1_projected_leaf_count A_eq_dec m w =
       enfa_leaf_prime_word m w.
@@ -1614,7 +1651,7 @@ Section Section4LR.
       LR(1) machine, reduce states form a sublist of all states, so the prime
       reach total over reduce states is bounded by the prime leaf total over
       all states. *)
-  Theorem section4_theorem6_conflicts_le_leaves :
+  Theorem reach_ambiguity_conflicts_le_leaves :
     forall {Q : Type} (M : lr1_machine Q) w,
       lr1_conflict_count M w <= lr1_leaf_count M w.
   Proof.
@@ -1627,12 +1664,12 @@ Section Section4LR.
 
   (** Direct Theorem 6 specialization to [lr1_machine_of_enfa] from
       Definition 10. *)
-  Theorem section4_theorem6_conflicts_le_leaves_of_enfa :
+  Theorem reach_ambiguity_conflicts_le_leaves_of_enfa :
     forall A_eq_dec (m : @finite_enfa A) w,
       lr1_conflict_count (lr1_machine_of_enfa A_eq_dec m) w <=
       lr1_leaf_count (lr1_machine_of_enfa A_eq_dec m) w.
   Proof.
-    intros. apply section4_theorem6_conflicts_le_leaves.
+    intros. apply reach_ambiguity_conflicts_le_leaves.
   Qed.
 
   Theorem lr1_leaf_count_le_one_conflict_free :
@@ -1641,7 +1678,7 @@ Section Section4LR.
       lr1_conflict_free M.
   Proof.
     intros Q M Hleaf w.
-    pose proof (section4_theorem6_conflicts_le_leaves M w).
+    pose proof (reach_ambiguity_conflicts_le_leaves M w).
     specialize (Hleaf w).
     lia.
   Qed.
@@ -1775,7 +1812,7 @@ Section Section4LR.
     tauto.
   Qed.
 
-  Theorem section4_theorem5_terminal_semantic_bridge :
+  Theorem reach_ambiguity_terminal_semantic_bridge :
     forall A_eq_dec (m : @finite_enfa A) s,
       gamma_terminal_lr1 A_eq_dec m s <->
       gamma_semantic_reduce_conflict_free m s.
@@ -1789,13 +1826,13 @@ Section Section4LR.
     tauto.
   Qed.
 
-  Theorem section4_theorem5_terminal_lr1_iff_gamma_unambiguous_reach :
+  Theorem reach_ambiguity_terminal_lr1_iff_gamma_unambiguous_reach :
     forall A_eq_dec (m : @finite_enfa A) s,
       gamma_terminal_lr1 A_eq_dec m s <->
       gamma_rlg_unambiguous m s /\ gamma_rlg_reach_unambiguous m s.
   Proof.
     intros A_eq_dec m s.
-    rewrite section4_theorem5_terminal_semantic_bridge.
+    rewrite reach_ambiguity_terminal_semantic_bridge.
     apply gamma_semantic_lr1_iff_gamma_unambiguous_reach.
   Qed.
 
@@ -1827,16 +1864,16 @@ Section Section4LR.
     gamma_canonical_conflict_soundness A_eq_dec m s /\
     gamma_canonical_conflict_completeness A_eq_dec m s.
 
-  Definition section4_enfa_final_no_epsilon_successors
+  Definition reach_ambiguity_enfa_final_no_epsilon_successors
       (m : @finite_enfa A) : Prop :=
     forall q,
       In q (fenfa_states m) ->
       enfa_final (fenfa_base m) q = true ->
       enfa_step (fenfa_base m) q None = [].
 
-  Theorem section4_enfa_final_no_epsilon_successors_maximal :
+  Theorem reach_ambiguity_enfa_final_no_epsilon_successors_maximal :
     forall (m : @finite_enfa A) st,
-      section4_enfa_final_no_epsilon_successors m ->
+      reach_ambiguity_enfa_final_no_epsilon_successors m ->
       In (started_end st) (fenfa_states m) ->
       accepted_traceb m st = true ->
       maximal_epsilon_simpleb m st = true.
@@ -1852,7 +1889,7 @@ Section Section4LR.
       (A_eq_dec : forall x y : A, {x = y} + {x <> y})
       (m : @finite_enfa A)
       (s : enfa_state (fenfa_base m)) : Prop :=
-    section4_enfa_final_no_epsilon_successors m /\
+    reach_ambiguity_enfa_final_no_epsilon_successors m /\
     gamma_canonical_conflict_reflection A_eq_dec m s.
 
   (** Canonical bridge.
@@ -1861,7 +1898,7 @@ Section Section4LR.
       uniqueness predicates are related through the named reflection condition
       below.  The examples include the terminal semantic conflict interface
       used by the paper theorem. *)
-  Theorem section4_lr1_support_canonical_semantic_bridge_under_conflict_reflection :
+  Theorem reach_ambiguity_lr1_support_canonical_semantic_bridge_under_conflict_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       gamma_canonical_conflict_reflection A_eq_dec m s ->
       gamma_canonical_semantic_bridge A_eq_dec m s.
@@ -1875,11 +1912,11 @@ Section Section4LR.
 
   (** Prime-final canonical bridge.
 
-      [section4_enfa_final_no_epsilon_successors] aligns final LR items with
+      [reach_ambiguity_enfa_final_no_epsilon_successors] aligns final LR items with
       prime/maximal accepting semantics: final states have no epsilon
       successors.  The combined reflection condition is named
       [gamma_prime_final_conflict_reflection]. *)
-  Theorem section4_lr1_support_canonical_semantic_bridge_under_prime_final_reflection :
+  Theorem reach_ambiguity_lr1_support_canonical_semantic_bridge_under_prime_final_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       In s (fenfa_states m) ->
@@ -1888,13 +1925,13 @@ Section Section4LR.
   Proof.
     intros A_eq_dec m s _ _ [_ Hreflection].
     now apply
-      section4_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
   Qed.
 
   (** Canonical LR(1) is related to Gamma unambiguity through
       [gamma_canonical_semantic_bridge], the item-set soundness/completeness
       bridge used by the canonical formulation. *)
-  Theorem section4_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach :
+  Theorem reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach :
     forall A_eq_dec (m : @finite_enfa A) s,
       gamma_canonical_semantic_bridge A_eq_dec m s ->
       gamma_canonical_lr1 A_eq_dec m s <->
@@ -1910,16 +1947,16 @@ Section Section4LR.
       now apply (proj2 (gamma_semantic_lr1_iff_gamma_unambiguous_reach m s)).
   Qed.
 
-  Theorem section4_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach_under_conflict_reflection :
+  Theorem reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach_under_conflict_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       gamma_canonical_conflict_reflection A_eq_dec m s ->
       gamma_canonical_lr1 A_eq_dec m s <->
       gamma_rlg_unambiguous m s /\ gamma_rlg_reach_unambiguous m s.
   Proof.
     intros A_eq_dec m s Hreflection.
-    apply section4_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach.
+    apply reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach.
     now apply
-      section4_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
   Qed.
 
   Definition gamma_lr1 (m : @finite_enfa A) : Prop :=
@@ -1933,14 +1970,14 @@ Section Section4LR.
   (** LR(1) bridge specification.  [gamma_lr1] unfolds directly to UFA plus
       ReachUFA, and the canonical item-set version below is stated with
       [gamma_canonical_semantic_bridge]. *)
-  Theorem section4_lr1_support_lr1_iff_ufa_reachufa :
+  Theorem reach_ambiguity_lr1_support_lr1_iff_ufa_reachufa :
     forall (m : @finite_enfa A),
       gamma_lr1 m <-> enfa_UFA m /\ enfa_ReachUFA m.
   Proof.
     intros. unfold gamma_lr1. tauto.
   Qed.
 
-  Theorem section4_lr1_support_leafufa_sufficient_lr1 :
+  Theorem reach_ambiguity_lr1_support_leafufa_sufficient_lr1 :
     forall (m : @finite_enfa A),
       enfa_UFA m ->
       enfa_ReachUFA m ->
@@ -1954,7 +1991,7 @@ Section Section4LR.
       over terminal words.  Unlike the deterministic canonical item-set
       canonical item-set formulation below, this statement follows directly
       from the terminal-word LR semantics. *)
-  Theorem section4_theorem5_terminal_lr1_iff_ufa_reachufa :
+  Theorem reach_ambiguity_terminal_lr1_iff_ufa_reachufa :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -1968,26 +2005,42 @@ Section Section4LR.
     - intro Hterminal.
       apply
         (proj1
-           (section4_theorem5_terminal_lr1_iff_gamma_unambiguous_reach
+           (reach_ambiguity_terminal_lr1_iff_gamma_unambiguous_reach
               A_eq_dec m s)) in Hterminal as [Hrlg_ufa Hrlg_reach].
       split.
-      + eapply section4_gamma_support_rlg_unambiguous_to_ufa; eauto.
-      + eapply section4_gamma_support_rlg_reach_unambiguous_to_reachufa;
+      + eapply reach_ambiguity_gamma_support_rlg_unambiguous_to_ufa; eauto.
+      + eapply reach_ambiguity_gamma_support_rlg_reach_unambiguous_to_reachufa;
           eauto.
     - intros [Hufa Hreach].
       apply
         (proj2
-           (section4_theorem5_terminal_lr1_iff_gamma_unambiguous_reach
+           (reach_ambiguity_terminal_lr1_iff_gamma_unambiguous_reach
               A_eq_dec m s)).
       split.
-      + eapply section4_gamma_support_ufa_to_rlg_unambiguous; eauto.
-      + eapply section4_gamma_support_reachufa_to_rlg_reach_unambiguous;
+      + eapply reach_ambiguity_gamma_support_ufa_to_rlg_unambiguous; eauto.
+      + eapply reach_ambiguity_gamma_support_reachufa_to_rlg_reach_unambiguous;
           eauto.
+  Qed.
+
+  Theorem reach_ambiguity_terminal_lr1_iff_ufa_reachufa_wf_single_start :
+    forall A_eq_dec (m : @finite_enfa A) s,
+      finite_enfa_wf m ->
+      enfa_start (fenfa_base m) = [s] ->
+      (gamma_terminal_lr1 A_eq_dec m s <->
+       enfa_UFA m /\ enfa_ReachUFA m).
+  Proof.
+    intros A_eq_dec m s Hwf Hstart.
+    eapply reach_ambiguity_terminal_lr1_iff_ufa_reachufa.
+    - exact Hwf.
+    - exact Hstart.
+    - eapply reach_ambiguity_enfa_prime_trace_enumerated_from_single_start;
+        eauto.
+    - eapply reach_ambiguity_enfa_started_traces_nodup_single_start; eauto.
   Qed.
 
   (** Theorem 5 II, LeafUFA sufficient direction for the terminal-word
       nondeterministic LR semantics. *)
-  Theorem section4_theorem5_leafufa_sufficient_terminal_lr1 :
+  Theorem reach_ambiguity_leafufa_sufficient_terminal_lr1 :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2001,22 +2054,39 @@ Section Section4LR.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Htrim Hextend Hleaf.
     apply
       (proj2
-         (section4_theorem5_terminal_lr1_iff_ufa_reachufa
+         (reach_ambiguity_terminal_lr1_iff_ufa_reachufa
             A_eq_dec m s Hwf Hstart Henum Hnodup)).
     assert (Hufa : enfa_UFA m).
     {
-      now apply section4_theorem2_leafufa_implies_ufa.
+      now apply reach_ambiguity_leafufa_implies_ufa.
     }
     split.
     - exact Hufa.
-    - eapply section4_theorem2_trim_extendable_ufa_implies_reachufa; eauto.
+    - eapply reach_ambiguity_trim_extendable_ufa_implies_reachufa; eauto.
+  Qed.
+
+  Theorem reach_ambiguity_leafufa_sufficient_terminal_lr1_wf_single_start :
+    forall A_eq_dec (m : @finite_enfa A) s,
+      finite_enfa_wf m ->
+      enfa_start (fenfa_base m) = [s] ->
+      enfa_LeafUFA m ->
+      gamma_terminal_lr1 A_eq_dec m s.
+  Proof.
+    intros A_eq_dec m s Hwf Hstart Hleaf.
+    apply
+      (proj2
+         (reach_ambiguity_terminal_lr1_iff_ufa_reachufa_wf_single_start
+            A_eq_dec m s Hwf Hstart)).
+    split.
+    - now apply reach_ambiguity_leafufa_implies_ufa.
+    - eapply reach_ambiguity_leafufa_implies_reachufa; eauto.
   Qed.
 
   (** LR(1) bridge canonical formulation.  Under well-formed, single-start,
       trace-enumeration, nodup, and [gamma_canonical_semantic_bridge]
       conditions, canonical LR(1) is equivalent to
       [enfa_UFA m /\ enfa_ReachUFA m]. *)
-  Theorem section4_lr1_support_canonical_lr1_iff_ufa_reachufa :
+  Theorem reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2029,26 +2099,26 @@ Section Section4LR.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Hbridge.
     split.
     - intro Hcanon.
-      apply (proj1 (section4_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach
+      apply (proj1 (reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach
                       A_eq_dec m s Hbridge)) in Hcanon
         as [Hrlg_ufa Hrlg_reach].
       split.
-      + eapply section4_gamma_support_rlg_unambiguous_to_ufa; eauto.
-      + eapply section4_gamma_support_rlg_reach_unambiguous_to_reachufa; eauto.
+      + eapply reach_ambiguity_gamma_support_rlg_unambiguous_to_ufa; eauto.
+      + eapply reach_ambiguity_gamma_support_rlg_reach_unambiguous_to_reachufa; eauto.
     - intros [Hufa Hreach].
-      apply (proj2 (section4_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach
+      apply (proj2 (reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach
                       A_eq_dec m s Hbridge)).
       split.
-      + eapply section4_gamma_support_ufa_to_rlg_unambiguous; eauto.
-      + eapply section4_gamma_support_reachufa_to_rlg_reach_unambiguous; eauto.
+      + eapply reach_ambiguity_gamma_support_ufa_to_rlg_unambiguous; eauto.
+      + eapply reach_ambiguity_gamma_support_reachufa_to_rlg_reach_unambiguous; eauto.
   Qed.
 
   (* Alias for the accepting-maximal reflection formulation. *)
-  Definition section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_semantic_bridge_and_accepting_maximal_reflection :=
-    section4_lr1_support_canonical_lr1_iff_ufa_reachufa.
+  Definition reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_semantic_bridge_and_accepting_maximal_reflection :=
+    reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa.
 
   (** Theorem 5 I under the LR item-set/semantic conflict-reflection bridge. *)
-  Theorem section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_reflection :
+  Theorem reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2060,16 +2130,16 @@ Section Section4LR.
   Proof.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Hreflection.
     apply
-      (section4_lr1_support_canonical_lr1_iff_ufa_reachufa
+      (reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa
          A_eq_dec m s Hwf Hstart Henum Hnodup).
     now apply
-      section4_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
   Qed.
 
-  Definition section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_and_accepting_maximal_reflection :=
-    section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_reflection.
+  Definition reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_and_accepting_maximal_reflection :=
+    reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_conflict_reflection.
 
-  Theorem section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_reflection :
+  Theorem reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2082,21 +2152,21 @@ Section Section4LR.
   Proof.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Hs Hreflection.
     apply
-      (section4_lr1_support_canonical_lr1_iff_ufa_reachufa
+      (reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa
          A_eq_dec m s Hwf Hstart Henum Hnodup).
     eapply
-      section4_lr1_support_canonical_semantic_bridge_under_prime_final_reflection;
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_prime_final_reflection;
       eauto.
   Qed.
 
-  Definition section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_and_accepting_maximal_reflection :=
-    section4_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_reflection.
+  Definition reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_and_accepting_maximal_reflection :=
+    reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa_under_prime_final_reflection.
 
   (** LR(1) bridge canonical version for the LeafUFA sufficient branch.
       LeafUFA first gives UFA; the explicit trim/extendable conditions provide
       ReachUFA, and [gamma_canonical_semantic_bridge] then gives canonical
       LR(1). *)
-  Theorem section4_lr1_support_leafufa_sufficient_canonical_lr1 :
+  Theorem reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1 :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2112,24 +2182,24 @@ Section Section4LR.
       Hbridge Hleaf.
     apply
       (proj2
-         (section4_lr1_support_canonical_lr1_iff_ufa_reachufa
+         (reach_ambiguity_lr1_support_canonical_lr1_iff_ufa_reachufa
             A_eq_dec m s Hwf Hstart Henum Hnodup Hbridge)).
     assert (Hufa : enfa_UFA m).
     {
-      now apply section4_theorem2_leafufa_implies_ufa.
+      now apply reach_ambiguity_leafufa_implies_ufa.
     }
     split.
     - exact Hufa.
-    - eapply section4_theorem2_trim_extendable_ufa_implies_reachufa; eauto.
+    - eapply reach_ambiguity_trim_extendable_ufa_implies_reachufa; eauto.
   Qed.
 
   (* Alias for the semantic-bridge accepting-maximal formulation. *)
-  Definition section4_lr1_support_leafufa_sufficient_canonical_lr1_under_semantic_bridge_accepting_maximal_reflection_and_da_leaf_bound :=
-    section4_lr1_support_leafufa_sufficient_canonical_lr1.
+  Definition reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_semantic_bridge_accepting_maximal_reflection_and_da_leaf_bound :=
+    reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1.
 
   (** Theorem 5 II, the LeafUFA sufficient direction under the LR
       item-set/semantic conflict-reflection bridge. *)
-  Theorem section4_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_reflection :
+  Theorem reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2144,17 +2214,17 @@ Section Section4LR.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Htrim Hextend
       Hreflection Hleaf.
     apply
-      (section4_lr1_support_leafufa_sufficient_canonical_lr1
+      (reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1
          A_eq_dec m s Hwf Hstart Henum Hnodup Htrim Hextend).
     now apply
-      section4_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_conflict_reflection.
     exact Hleaf.
   Qed.
 
-  Definition section4_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_accepting_maximal_reflection_and_da_leaf_bound :=
-    section4_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_reflection.
+  Definition reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_accepting_maximal_reflection_and_da_leaf_bound :=
+    reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_conflict_reflection.
 
-  Theorem section4_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_reflection :
+  Theorem reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_reflection :
     forall A_eq_dec (m : @finite_enfa A) s,
       finite_enfa_wf m ->
       enfa_start (fenfa_base m) = [s] ->
@@ -2170,18 +2240,18 @@ Section Section4LR.
     intros A_eq_dec m s Hwf Hstart Henum Hnodup Htrim Hextend
       Hs Hreflection Hleaf.
     apply
-      (section4_lr1_support_leafufa_sufficient_canonical_lr1
+      (reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1
          A_eq_dec m s Hwf Hstart Henum Hnodup Htrim Hextend).
     eapply
-      section4_lr1_support_canonical_semantic_bridge_under_prime_final_reflection;
+      reach_ambiguity_lr1_support_canonical_semantic_bridge_under_prime_final_reflection;
       eauto.
     exact Hleaf.
   Qed.
 
-  Definition section4_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_accepting_maximal_reflection_and_da_leaf_bound :=
-    section4_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_reflection.
+  Definition reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_accepting_maximal_reflection_and_da_leaf_bound :=
+    reach_ambiguity_lr1_support_leafufa_sufficient_canonical_lr1_under_prime_final_reflection.
 
-  Theorem section4_theorem6_leaf_one_conflict_free_of_enfa :
+  Theorem reach_ambiguity_leaf_one_conflict_free_of_enfa :
     forall A_eq_dec (m : @finite_enfa A),
       (forall w,
         lr1_leaf_count (lr1_machine_of_enfa A_eq_dec m) w <= 1) ->
@@ -2192,7 +2262,7 @@ Section Section4LR.
     exact Hleaf.
   Qed.
 
-  Theorem section4_lr1_support_full_spec_if_lr1_leaf_bounded :
+  Theorem reach_ambiguity_lr1_support_full_spec_if_lr1_leaf_bounded :
     forall A_eq_dec (m : @finite_enfa A),
       gamma_lr1 m ->
       (forall w,
@@ -2201,10 +2271,10 @@ Section Section4LR.
   Proof.
     intros A_eq_dec m Hlr Hleaf.
     split; [exact Hlr |].
-    now apply section4_theorem6_leaf_one_conflict_free_of_enfa.
+    now apply reach_ambiguity_leaf_one_conflict_free_of_enfa.
   Qed.
 
-  Theorem section4_lr1_support_full_spec_iff_ufa_reachufa_conflict_free :
+  Theorem reach_ambiguity_lr1_support_full_spec_iff_ufa_reachufa_conflict_free :
     forall A_eq_dec (m : @finite_enfa A),
       gamma_lr1_full_spec A_eq_dec m <->
       enfa_UFA m /\
@@ -2255,35 +2325,35 @@ Section Section4LR.
     | DescriptorRLG G => rlg_leaf_unambiguous G
     end.
 
-  Definition Problem1_U
+  Definition unambiguity_decision_problem
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (D : regular_descriptor) : Prop :=
     descriptor_unambiguous alphabet label_matches D.
 
-  Definition Problem1_ReachU
+  Definition reach_unambiguity_decision_problem
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (D : regular_descriptor) : Prop :=
     descriptor_reach_unambiguous alphabet label_matches D.
 
-  Definition Problem1_LeafU
+  Definition leaf_unambiguity_decision_problem
       (alphabet : list A)
       (label_matches : A -> A -> bool)
       (D : regular_descriptor) : Prop :=
     descriptor_leaf_unambiguous alphabet label_matches D.
 
-  Definition Problem3_SUFA_Member
+  Definition structural_unambiguity_membership_problem
       (m : @finite_enfa A)
       (w : list A) : Prop :=
     enfa_SUFA m /\ 0 < enfa_da_prime_word m w.
 
-  Definition Problem3_LeafUFA_Member
+  Definition leaf_unambiguity_membership_problem
       (m : @finite_enfa A)
       (w : list A) : Prop :=
     enfa_LeafUFA m /\ 0 < enfa_da_prime_word m w.
 
-  Definition Problem2_SUFA_Member := Problem3_SUFA_Member.
+  Definition epsilon_free_structural_unambiguity_membership_problem := structural_unambiguity_membership_problem.
 
-  Definition Problem2_LeafUFA_Member := Problem3_LeafUFA_Member.
-End Section4LR.
+  Definition epsilon_free_leaf_unambiguity_membership_problem := leaf_unambiguity_membership_problem.
+End AmbiguityLR.

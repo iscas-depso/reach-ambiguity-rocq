@@ -4,7 +4,7 @@ Import ListNotations.
 From PositionAutomata.Core Require Import Sets Syntax.
 From PositionAutomata.Automata Require Import PositionAutomaton Equivalence PositionCorrectness.
 From PositionAutomata.Regex Require Import KleeneSemantics RegexReDoS.
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity DegreeofInfiniteAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity InfiniteAmbiguity.
 
 Definition a_then_b : regex bool :=
   Cat (Atom true) (Atom false).

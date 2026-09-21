@@ -547,7 +547,7 @@ Section SigmaBlankIdentity.
       now apply sigma_plus_blank_star_sound.
   Qed.
 
-  Theorem paper_kleene_step_assume_universal :
+  Theorem regex_universal_sigma_blank_step :
     forall sigma blank (r : regex A),
       regex_equiv r (sigma_star_regex sigma) ->
       regex_equiv
@@ -565,7 +565,7 @@ Section SigmaBlankIdentity.
     - exact Hr.
   Qed.
 
-  Theorem paper_kleene_h_sigma_blank_chain :
+  Theorem h_regex_universal_sigma_blank_equiv :
     forall sigma blank (r : regex A),
       regex_equiv r (sigma_star_regex sigma) ->
       regex_equiv
@@ -578,7 +578,7 @@ Section SigmaBlankIdentity.
     eapply regex_equiv_trans.
     - apply h_regex_idempotence.
     - eapply regex_equiv_trans.
-      + now apply paper_kleene_step_assume_universal.
+       + now apply regex_universal_sigma_blank_step.
       + exact (sigma_star_blank_star_sigma_star_equiv sigma blank).
   Qed.
 End SigmaBlankIdentity.

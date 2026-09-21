@@ -2,7 +2,7 @@ From Stdlib Require Import List Bool Arith Lia.
 Import ListNotations.
 
 From PositionAutomata.Core Require Import Syntax.
-From PositionAutomata.Ambiguity Require Import DegreeofAmbiguity DegreeofInfiniteAmbiguity.
+From PositionAutomata.Ambiguity Require Import FiniteAmbiguity InfiniteAmbiguity.
 From PositionAutomata.Regex Require Import RegexReDoS.
 
 (** Reach-ambiguity and foliance strings over the existing finite-NFA core.
@@ -12,7 +12,7 @@ From PositionAutomata.Regex Require Import RegexReDoS.
     executable word enumeration already used by the ambiguity witnesses.  It
     does not introduce epsilon-NFAs, LR machines, or simulation pruning. *)
 
-Section ReachAmbiguityFoliance.
+Section FolianceProperties.
   Context {A : Type}.
 
   (** Epsilon-free NFA measures used by the foliance layer.
@@ -1361,9 +1361,9 @@ Section ReachAmbiguityFoliance.
     unfold solve_regex_foliance_pref_against in Hsolve.
     now apply solve_foliance_pref_against_sound in Hsolve.
   Qed.
-End ReachAmbiguityFoliance.
+End FolianceProperties.
 
-Section ReachAmbiguityFolianceExamples.
+Section FoliancePropertiesExamples.
   (* Example: true + true has two accepting branches; eta can be 2 while
      max-dra need not be 2 when the branches end in different states. *)
 
@@ -1469,4 +1469,4 @@ Section ReachAmbiguityFolianceExamples.
   Example foliance_duplicated_loop_dra_word :
     dra_word foliance_duplicated_loop_nfa [true] = 2.
   Proof. reflexivity. Qed.
-End ReachAmbiguityFolianceExamples.
+End FoliancePropertiesExamples.
