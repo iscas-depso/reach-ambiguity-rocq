@@ -336,14 +336,14 @@ Section EpsilonNFA.
       : list (enfa_state (fenfa_base m)) :=
     filter (enfa_final (fenfa_base m)) (fenfa_states m).
 
-  (* Definition 5 I.i: dra_M(w, q), traces reading [w] and ending at [q]. *)
+  (* Definition 5 I.ii: dra_M(w, q), traces reading [w] and ending at [q]. *)
   Definition enfa_dra_at
       (m : finite_enfa)
       (w : list A)
       (q : enfa_state (fenfa_base m)) : nat :=
     length (filter (ends_inb m q) (started_traces m w)).
 
-  (* Definition 5 I.ii: da_M(w), accepting traces for [w]. *)
+  (* Definition 5 I.i: da_M(w), accepting traces for [w]. *)
   Definition enfa_da_word (m : finite_enfa) (w : list A) : nat :=
     sum_nats (map (enfa_dra_at m w) (enfa_final_states m)).
 

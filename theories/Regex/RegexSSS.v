@@ -12,7 +12,7 @@ From PositionAutomata.Automata Require Import EpsilonNFA.
 Section RegexSSS.
   Context {A : Type}.
 
-  (** Fragment used by the Section 4 Definition 7 [Msss(E)] construction.
+  (** Fragment supporting the Section 4 Definition 8 [Msss(E)] clauses.
       A fragment stores an entry, an exit, the next fresh state, and edges. *)
   Record sss_fragment : Type := {
     sss_start : nat;
@@ -1154,7 +1154,7 @@ Section RegexSSS.
     (forall a, label_matches a a = true) /\
     (forall a b, label_matches a b = true -> a = b).
 
-  (** Definition 7 language correctness needs executable boolean matching
+  (** Definition 8 language correctness needs executable boolean matching
       [label_matches] to reflect semantic equality; [label_matches_reflects_eq]
       The bridge below converts [regex_Msss] ENFA traces back into SSS
       fragment traces for the complete direction. *)
@@ -2132,7 +2132,7 @@ Section RegexSSS.
     now rewrite Hword in Hmatch.
   Qed.
 
-  (** Final language equivalence entry point for Definition 7. *)
+  (** Final language equivalence entry point for Definition 8. *)
   Theorem regex_Msss_language_equiv_from_specs :
     forall alphabet label_matches r,
       regex_Msss_language_sound_spec alphabet label_matches r ->

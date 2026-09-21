@@ -176,7 +176,7 @@ Section FolianceProperties.
   Definition max_eta_upto (m : @finite_nfa A) (k : nat) : nat :=
     max_nats (map (eta_word m) (candidate_words m k)).
 
-  (* Problem 4: [k_da] and [k_dra] require length <= [k], acceptance,
+  (* Problem 6: [k_da] and [k_dra] require length <= [k], acceptance,
      and ambiguity at least [k].  The boolean forms drive enumeration. *)
 
   Definition k_da (m : @finite_nfa A) (k : nat) (w : list A) : Prop :=
@@ -205,7 +205,7 @@ Section FolianceProperties.
   Definition solve_k_dra (m : @finite_nfa A) (k : nat) : option (list A) :=
     find (k_drab m k) (candidate_words m k).
 
-  (* Problem 9: a k-foliance word is rejected, while some prefix reaches eta >= k. *)
+  (* Problem 10: a k-foliance word is rejected, while some prefix reaches eta >= k. *)
 
   Fixpoint prefixes (w : list A) : list (list A) :=
     match w with
@@ -235,7 +235,7 @@ Section FolianceProperties.
   Definition has_k_foliance (m : @finite_nfa A) (k : nat) : Prop :=
     exists w, k_foliance m k w.
 
-  (* Problem 10 prefix-free variant.  The [against] forms separate the
+  (* Problem 11 prefix-free variant.  The [against] forms separate the
      eta-counting automaton from the rejection automaton, matching partial
      matching settings such as Sigma*E. *)
 
@@ -572,7 +572,7 @@ Section FolianceProperties.
       lia.
   Qed.
 
-  (* Definitions 7/8: endpoint [dra] is bounded by total [eta]. *)
+  (* Definition 5: endpoint [dra] is bounded by total [eta]. *)
 
   Theorem dra_at_le_dra_word :
     forall (m : @finite_nfa A) w q,
@@ -605,7 +605,7 @@ Section FolianceProperties.
     - apply dra_word_le_eta_word.
   Qed.
 
-  (* Definitions 6/7: in a well-formed finite NFA, accepting runs equal the
+  (* Definition 5: in a well-formed finite NFA, accepting runs equal the
      sum of [dra_at] over final states. *)
   Lemma final_states_sound :
     forall (m : @finite_nfa A) q,
@@ -777,7 +777,7 @@ Section FolianceProperties.
     reflexivity.
   Qed.
 
-  (** Problem 5 executable spec: a bounded maximum is an upper bound over
+  (** Problem 6 executable spec: a bounded maximum is an upper bound over
       candidates, and every positive maximum has a witnessing candidate. *)
 
   Lemma max_mapped_upto_upper :
@@ -1045,7 +1045,7 @@ Section FolianceProperties.
     now apply prefix_rejected_rejected.
   Qed.
 
-  (* Problem 9 prefix-max witness: a k-foliance word has a prefix with eta >= k. *)
+  (* Problem 10 prefix-max witness: a k-foliance word has a prefix with eta >= k. *)
 
   Theorem k_foliance_eta_prefix_witness :
     forall (m : @finite_nfa A) k w,
@@ -1093,7 +1093,7 @@ Section FolianceProperties.
       lia.
   Qed.
 
-  (* Lemma 4 non-co-empty direction: any k-foliance word rules out k-co-emptiness. *)
+  (* Lemma 7 non-co-empty direction: any k-foliance word rules out k-co-emptiness. *)
 
   Theorem k_foliance_not_k_co_empty :
     forall (m : @finite_nfa A) k w,

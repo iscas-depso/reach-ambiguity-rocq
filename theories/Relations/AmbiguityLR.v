@@ -62,7 +62,7 @@ Section AmbiguityLR.
       + constructor.
   Qed.
 
-  (** Definition 7 regex-level specs.  [Mpos(E)] and [Msss(E)] carry the weak
+  (** Definition 8 regex-level specs.  [Mpos(E)] and [Msss(E)] carry the weak
       and strong reach-unambiguous notions, plus the weak deterministic and
       leaf-unambiguous characterizations. *)
   Definition regex_Mpos
@@ -158,7 +158,7 @@ Section AmbiguityLR.
   Arguments LREndLeft {Q}.
   Arguments LREndRight {Q}.
 
-  (** LR(1) item shapes used for Theorem 6.  This formalizes the normalized
+  (** LR(1) item shapes used for Definition 11.  This formalizes the normalized
       LR(1) machine skeleton for the right-linear grammar [Gamma(M)]: state
       items, shift-before/after items, complete items, and final reduce items. *)
   Inductive lr1_item (Q : Type) : Type :=
@@ -260,7 +260,7 @@ Section AmbiguityLR.
   Definition lr1_lookaheads (m : @finite_enfa A) : list lr_lookahead :=
     [LAEpsilon; LAEndLeft; LAEndRight] ++ map LATerm (fenfa_alphabet m).
 
-  (** Theorem 6 state-set decomposition.  Reduce items include completed
+  (** Definition 11 state-set decomposition.  Reduce items include completed
       transition items and final items; nonreduce items include automaton state
       items and intermediate transition-gadget items. *)
   Definition lr1_reduce_items (m : @finite_enfa A)
@@ -319,7 +319,7 @@ Section AmbiguityLR.
     (exists a, In a (fenfa_alphabet m) /\ x = LRTerm a) \/
     (exists q, In q (fenfa_states m) /\ x = LRNonterm q).
 
-  (** Theorem 6 membership specs.  These predicates unfold the list
+  (** Definition 11 membership specs.  These predicates unfold the list
       constructions into the paper-level descriptions of reduce/nonreduce
       items, start/final items, and alphabet symbols. *)
   Definition lr1_reduce_item_spec
@@ -347,7 +347,7 @@ Section AmbiguityLR.
           (it = LRBefore p (lr_symbol_of_label l) q la \/
            it = LRAfterSymbol p (lr_symbol_of_label l) q la))).
 
-  (** Theorem 6 transition specs.  Reduce transitions are epsilon control
+  (** Definition 11 transition specs.  Reduce transitions are epsilon control
       edges; shift transitions read terminal or nonterminal symbols. *)
   Definition lr1_reduce_transitions (m : @finite_enfa A)
       : list (lr1_item (enfa_state (fenfa_base m)) *
@@ -456,7 +456,7 @@ Section AmbiguityLR.
       fenfa_states lr1_enfa = lr1_reduce_states ++ lr1_nonreduce_states
   }.
 
-  (** Normalized LR(1) machine for Theorem 6.  The states, alphabet,
+  (** Normalized LR(1) machine for Definition 11.  The states, alphabet,
       transitions, and reduce set are generated explicitly from the source
       ENFA for the counting relation.  The later [lr1_closure]/[lr1_goto]/
       [lr1_canonical_collection] definitions provide the Gamma-specific
@@ -926,7 +926,7 @@ Section AmbiguityLR.
     - rewrite IH. lia.
   Qed.
 
-  (** Theorem 7 counting interface.  [lr1_conflict_count] sums prime reach
+  (** Theorem 6 counting interface.  [lr1_conflict_count] sums prime reach
       counts over reduce states; [lr1_leaf_count] uses the underlying ENFA
       prime leaf count. *)
   Definition lr1_conflict_count
@@ -950,7 +950,7 @@ Section AmbiguityLR.
       (m : @finite_enfa A) : Prop :=
     lr1_conflict_free (lr1_machine_of_enfa A_eq_dec m).
 
-  (** Definition 10 basic machine characterization: the reduce/nonreduce
+  (** Definition 11 basic machine characterization: the reduce/nonreduce
       states and full state list of [lr1_machine_of_enfa] are exactly the item
       sets generated from the ENFA above. *)
   Theorem reach_ambiguity_lr1_machine_characterization :
@@ -965,7 +965,7 @@ Section AmbiguityLR.
     intros. repeat split; reflexivity.
   Qed.
 
-  (** Definition 10 unfolded specs.  The following membership theorems
+  (** Definition 11 unfolded specs.  The following membership theorems
       characterize start/final/alphabet entries, reduce/nonreduce items,
       reduce/shift transitions, and the step function. *)
   Theorem reach_ambiguity_start_state_membership :
@@ -1390,7 +1390,7 @@ Section AmbiguityLR.
                        apply (reach_ambiguity_step_membership A_eq_dec m p l q).
   Qed.
 
-  (** Lemma 3 I projection interface.
+  (** Lemma 4 I projection interface.
 
       The raw LR ENFA has administrative states and symbols. The paper's
       leaf-preservation claim is therefore stated over the observable
@@ -1663,7 +1663,7 @@ Section AmbiguityLR.
   Qed.
 
   (** Direct Theorem 6 specialization to [lr1_machine_of_enfa] from
-      Definition 10. *)
+      Definition 11. *)
   Theorem reach_ambiguity_conflicts_le_leaves_of_enfa :
     forall A_eq_dec (m : @finite_enfa A) w,
       lr1_conflict_count (lr1_machine_of_enfa A_eq_dec m) w <=
@@ -1685,7 +1685,7 @@ Section AmbiguityLR.
 
   (** Gamma-specific LR(1)-ness interface.
 
-      The paper's Definition 10 describes a nondeterministic LR machine and
+      The paper's Definition 11 describes a nondeterministic LR machine and
       counts conflicts over terminal words.  The terminal-word LR predicates
       below therefore use the Gamma/RLG prime accepting and prime reach
       derivations as the semantic reduce witnesses of that machine.
@@ -1987,7 +1987,7 @@ Section AmbiguityLR.
     intros m Hu Hr _. split; assumption.
   Qed.
 
-  (** Theorem 5 I, read through Definition 10's nondeterministic LR machine
+  (** Theorem 5 I, read through Definition 11's nondeterministic LR machine
       over terminal words.  Unlike the deterministic canonical item-set
       canonical item-set formulation below, this statement follows directly
       from the terminal-word LR semantics. *)
@@ -2287,7 +2287,7 @@ Section AmbiguityLR.
     tauto.
   Qed.
 
-  (** Section 4.2 decision-problem interface: Problem 1/2 input objects and
+  (** Section 4.2 decision-problem interface: Problem 1/4 input objects and
       their reach/leaf/SUFA membership predicates. *)
   Inductive regular_descriptor : Type :=
   | DescriptorRegex : regex A -> regular_descriptor

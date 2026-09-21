@@ -257,106 +257,106 @@ Section FormalizationIndex.
   Definition formalization_suffix_ambiguity_family_leaf_prime_attack_count_3 :=
     suffix_ambiguity_family_leaf_prime_attack_count_3.
 
-  (** Definition 7: weak and strong reach/leaf-unambiguity in regexes. *)
+  (** Definition 8: weak and strong reach/leaf-unambiguity in regexes. *)
 
-  (* Definition 7 I *)
+  (* Definition 8 I *)
   Definition formalization_regex_weak_reach_unambiguous :=
     @regex_weak_reach_unambiguous A.
 
-  (* Definition 7 II *)
+  (* Definition 8 II *)
   Definition formalization_regex_strong_reach_unambiguous :=
     @regex_strong_reach_unambiguous A.
 
-  (* Definition 7 III *)
+  (* Definition 8 III *)
   Definition formalization_regex_weak_leaf_unambiguous :=
     @regex_weak_leaf_unambiguous A.
 
-  (* Definition 7 IV *)
+  (* Definition 8 IV *)
   Definition formalization_regex_strong_leaf_unambiguous :=
     @regex_strong_leaf_unambiguous A.
 
-  (* Definition 7: definitional characterizations *)
+  (* Definition 8: definitional characterizations *)
   Definition formalization_regex_characterizations :=
     @reach_ambiguity_regex_characterizations A.
 
   Definition formalization_regex_weak_leaf_iff_weak_deterministic :=
     @reach_ambiguity_regex_weak_leaf_iff_weak_deterministic A.
 
-  (** Definition 8: (reach-)ambiguities and leaves in CFGs. *)
+  (** Definition 9: (reach-)ambiguities and leaves in CFGs. *)
 
-  (* Definition 8 I.i *)
+  (* Definition 9 I.i *)
   Definition formalization_cfg_da :=
     @reach_ambiguity_cfg_da A.
 
-  (* Definition 8 I.ii *)
+  (* Definition 9 I.ii *)
   Definition formalization_cfg_dra :=
     @reach_ambiguity_cfg_dra A.
 
-  (* Definition 8 I.iii *)
+  (* Definition 9 I.iii *)
   Definition formalization_cfg_leaf :=
     @reach_ambiguity_cfg_leaf A.
 
-  (* Definition 8 II.i *)
+  (* Definition 9 II.i *)
   Definition formalization_cfg_da_prime :=
     @reach_ambiguity_cfg_da_prime A.
 
-  (* Definition 8 II.ii *)
+  (* Definition 9 II.ii *)
   Definition formalization_cfg_dra_prime :=
     @reach_ambiguity_cfg_dra_prime A.
 
-  (* Definition 8 II.iii *)
+  (* Definition 9 II.iii *)
   Definition formalization_cfg_leaf_prime :=
     @reach_ambiguity_cfg_leaf_prime A.
 
-  (* Definition 8 I.i: finite-cardinality reading. *)
+  (* Definition 9 I.i: finite-cardinality reading. *)
   Definition formalization_cfg_da_cardinality :=
     @reach_ambiguity_cfg_da_cardinality A.
 
-  (* Definition 8 I.ii: finite-cardinality reading. *)
+  (* Definition 9 I.ii: finite-cardinality reading. *)
   Definition formalization_cfg_dra_cardinality :=
     @reach_ambiguity_cfg_dra_cardinality A.
 
-  (* Definition 8 I.iii: finite-cardinality reading. *)
+  (* Definition 9 I.iii: finite-cardinality reading. *)
   Definition formalization_cfg_leaf_cardinality :=
     @reach_ambiguity_cfg_leaf_cardinality A.
 
-  (* Definition 8 II.i: finite-cardinality reading. *)
+  (* Definition 9 II.i: finite-cardinality reading. *)
   Definition formalization_cfg_da_prime_cardinality :=
     @reach_ambiguity_cfg_da_prime_cardinality A.
 
-  (* Definition 8 II.ii: finite-cardinality reading. *)
+  (* Definition 9 II.ii: finite-cardinality reading. *)
   Definition formalization_cfg_dra_prime_cardinality :=
     @reach_ambiguity_cfg_dra_prime_cardinality A.
 
-  (* Definition 8 II.iii: finite-cardinality reading. *)
+  (* Definition 9 II.iii: finite-cardinality reading. *)
   Definition formalization_cfg_leaf_prime_cardinality :=
     @reach_ambiguity_cfg_leaf_prime_cardinality A.
 
-  (* Definition 8 I.i: extended-cardinality reading. *)
+  (* Definition 9 I.i: extended-cardinality reading. *)
   Definition formalization_cfg_da_extended_cardinality :=
     @reach_ambiguity_cfg_da_extended_cardinality A.
 
-  (* Definition 8 I.ii: extended-cardinality reading. *)
+  (* Definition 9 I.ii: extended-cardinality reading. *)
   Definition formalization_cfg_dra_extended_cardinality :=
     @reach_ambiguity_cfg_dra_extended_cardinality A.
 
-  (* Definition 8 I.iii: extended-cardinality reading. *)
+  (* Definition 9 I.iii: extended-cardinality reading. *)
   Definition formalization_cfg_leaf_extended_cardinality :=
     @reach_ambiguity_cfg_leaf_extended_cardinality A.
 
-  (* Definition 8 II.i: extended-cardinality reading. *)
+  (* Definition 9 II.i: extended-cardinality reading. *)
   Definition formalization_cfg_da_prime_extended_cardinality :=
     @reach_ambiguity_cfg_da_prime_extended_cardinality A.
 
-  (* Definition 8 II.ii: extended-cardinality reading. *)
+  (* Definition 9 II.ii: extended-cardinality reading. *)
   Definition formalization_cfg_dra_prime_extended_cardinality :=
     @reach_ambiguity_cfg_dra_prime_extended_cardinality A.
 
-  (* Definition 8 II.iii: extended-cardinality reading. *)
+  (* Definition 9 II.iii: extended-cardinality reading. *)
   Definition formalization_cfg_leaf_prime_extended_cardinality :=
     @reach_ambiguity_cfg_leaf_prime_extended_cardinality A.
 
-  (* Definition 8 example: a self-loop CFG gives an infinite reach fiber,
+  (* Definition 9 example: a self-loop CFG gives an infinite reach fiber,
      motivating the extended-cardinality reading used below. *)
   Definition formalization_support_cfg_self_loop_dra_fiber_infinite :=
     @reach_ambiguity_cfg_self_loop_dra_fiber_infinite A.
@@ -364,21 +364,21 @@ Section FormalizationIndex.
   Definition formalization_support_cfg_self_loop_dra_fiber_not_finite :=
     @reach_ambiguity_cfg_self_loop_dra_fiber_not_finite A.
 
-  (** Definition 9: reach-, leaf-, and ordinary unambiguous grammars. *)
+  (** Definition 10: reach-, leaf-, and ordinary unambiguous grammars. *)
 
-  (* Definition 9 I *)
+  (* Definition 10 I *)
   Definition formalization_cfg_unambiguous :=
     @reach_ambiguity_cfg_unambiguous A.
 
-  (* Definition 9 II *)
+  (* Definition 10 II *)
   Definition formalization_cfg_reach_unambiguous :=
     @reach_ambiguity_cfg_reach_unambiguous A.
 
-  (* Definition 9 III *)
+  (* Definition 10 III *)
   Definition formalization_cfg_leaf_unambiguous :=
     @reach_ambiguity_cfg_leaf_unambiguous A.
 
-  (* Definition 9 is organized through uniqueness predicates, the
+  (* Definition 10 is organized through uniqueness predicates, the
      finite-cardinality numeric layer, finite-supremum predicates, and extended
      cardinality/supremum predicates. *)
   Definition formalization_cfg_da_prime_finite_cardinality :=
@@ -618,12 +618,12 @@ Section FormalizationIndex.
      conditions provided by finite well-formedness, a single start state, and
      NoDup (fenfa_alphabet m).  Gamma accepting-maximal reflection is provided
      by [reach_ambiguity_gamma_accepting_maximal_reflects], and CFG finite and
-     extended-cardinality readings are exposed by the Definition 8/9 aliases
+     extended-cardinality readings are exposed by the Definitions 9/10 aliases
      above. *)
 
   (** Theorem 5: (reach-)unambiguity and LR(1)-ness. *)
 
-  (* Primary paper-order reading: Definition 10's nondeterministic LR machine
+  (* Primary paper-order reading: Definition 11's nondeterministic LR machine
      is interpreted with terminal-word reduce-conflict semantics, giving the
      Theorem 5 bridge used by the paper statement. *)
   Definition formalization_terminal_semantic_bridge :=
@@ -688,38 +688,38 @@ Section FormalizationIndex.
   Definition formalization_support_canonical_lr1_iff_gamma_unambiguous_reach :=
     @reach_ambiguity_lr1_support_canonical_lr1_iff_gamma_unambiguous_reach A.
 
-  (** Definition 10: nondeterministic LR(1) machine. *)
+  (** Definition 11: nondeterministic LR(1) machine. *)
 
-  (* Definition 10 I *)
+  (* Definition 11 I *)
   Definition formalization_lr1_reduce_items := @lr1_reduce_items A.
 
-  (* Definition 10 I *)
+  (* Definition 11 I *)
   Definition formalization_lr1_nonreduce_items :=
     @lr1_nonreduce_items A.
 
-  (* Definition 10 I *)
+  (* Definition 11 I *)
   Definition formalization_lr1_items := @lr1_items A.
 
-  (* Definition 10 II *)
+  (* Definition 11 II *)
   Definition formalization_lr1_reduce_transitions :=
     @lr1_reduce_transitions A.
 
-  (* Definition 10 II *)
+  (* Definition 11 II *)
   Definition formalization_lr1_shift_transitions :=
     @lr1_shift_transitions A.
 
-  (* Definition 10 II *)
+  (* Definition 11 II *)
   Definition formalization_lr1_step := @lr1_step A.
 
-  (* Definition 10 III *)
+  (* Definition 11 III *)
   Definition formalization_lr1_machine_of_enfa :=
     @lr1_machine_of_enfa A.
 
-  (* Definition 10: structural characterization *)
+  (* Definition 11: structural characterization *)
   Definition formalization_lr1_machine_characterization :=
     @reach_ambiguity_lr1_machine_characterization A.
 
-  (* Definition 10: expanded membership characterization *)
+  (* Definition 11: expanded membership characterization *)
   Definition formalization_lr1_machine_full_characterization :=
     @reach_ambiguity_lr1_machine_full_characterization A.
 
@@ -729,7 +729,7 @@ Section FormalizationIndex.
   Definition formalization_conflicts_le_leaves :=
     @reach_ambiguity_conflicts_le_leaves A.
 
-  (* Theorem 6 specialization to Definition 10 machines *)
+  (* Theorem 6 specialization to Definition 11 machines *)
   Definition formalization_conflicts_le_leaves_of_enfa :=
     @reach_ambiguity_conflicts_le_leaves_of_enfa A.
 
@@ -760,12 +760,12 @@ Section FormalizationIndex.
 
   (* Theorem 8: NL-completeness of U, ReachU, and epsilon-LeafU. *)
 
-  (* Problem 3: SUFA- and LeafUFA-Member. *)
+  (* Problem 4: SUFA- and LeafUFA-Member. *)
   Definition formalization_structural_unambiguity_membership_problem := @structural_unambiguity_membership_problem A.
 
   Definition formalization_leaf_unambiguity_membership_problem := @leaf_unambiguity_membership_problem A.
 
-  (* Definition 11: directed forest accessibility used by the L-hardness proof. *)
+  (* Definition 12: directed forest accessibility used by the L-hardness proof. *)
 
   (* Theorem 9: L-hardness of SUFA-Member. *)
 

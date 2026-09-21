@@ -4,7 +4,7 @@ Import ListNotations.
 From PositionAutomata.Ambiguity Require Import FiniteAmbiguity.
 From PositionAutomata.Automata Require Import EpsilonNFA.
 
-(** Section 4, Definitions 8--9 and Gamma bridge support for right-linear
+(** Section 4, Definitions 9--10 and Gamma bridge support for right-linear
     grammars.  Productions have the form [A -> u B] or [A -> u]. *)
 
 Section RightLinearGrammar.
@@ -21,11 +21,11 @@ Section RightLinearGrammar.
   Definition rlg_production (G : right_linear_grammar) : Type :=
     (rlg_nonterminal G * list A * option (rlg_nonterminal G))%type.
 
-  (** CFG-level statements for paper Definitions 8 and 9.
+  (** CFG-level statements for paper Definitions 9 and 10.
 
       The paper states these definitions for CFGs, while the Gamma bridge
       later specializes them to right-linear grammars.  This layer records the
-      general rightmost-derivation objects that Definition 8 counts, including
+      general rightmost-derivation objects that Definition 9 counts, including
       the left/right boundary terminals used by the augmented grammar notation.
       Ordinary ambiguity uses the unmarked start form [S]; reach ambiguity and
       leaves use the marked start form [left S], so the displayed
@@ -126,7 +126,7 @@ Section RightLinearGrammar.
       (gamma : cfg_sentential_form (cfg_nonterminal G)) : Prop :=
     cfg_rightmost_derivation_valid G (cfg_marked_start_form G) d gamma.
 
-  (* Definition 8 I.i *)
+  (* Definition 9 I.i *)
   Definition cfg_da_derivation
       (G : context_free_grammar)
       (w : list A)
@@ -134,7 +134,7 @@ Section RightLinearGrammar.
     cfg_rightmost_derivation_valid G
       (cfg_start_form G) d (cfg_terminal_word G w).
 
-  (* Definition 8 I.ii *)
+  (* Definition 9 I.ii *)
   Definition cfg_dra_derivation
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
@@ -146,7 +146,7 @@ Section RightLinearGrammar.
       cfg_marked_rightmost_derivation_valid G d
         ([CfgLeftMarker] ++ alpha ++ (CfgNonterminal X :: beta)).
 
-  (* Definition 8 I.iii *)
+  (* Definition 9 I.iii *)
   Definition cfg_leaf_derivation
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
@@ -215,7 +215,7 @@ Section RightLinearGrammar.
       : cfg_derivation G -> Prop :=
     cfg_leaf_derivation G alpha.
 
-  (* Definition 8 II.i *)
+  (* Definition 9 II.i *)
   Definition cfg_da_prime_derivation
       (G : context_free_grammar)
       (w : list A)
@@ -223,7 +223,7 @@ Section RightLinearGrammar.
     cfg_derivation_maximal_epsilon_simple_in
       G (cfg_da_derivation_set G w) d.
 
-  (* Definition 8 II.ii *)
+  (* Definition 9 II.ii *)
   Definition cfg_dra_prime_derivation
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
@@ -232,7 +232,7 @@ Section RightLinearGrammar.
     cfg_dra_derivation G alpha X d /\
     cfg_derivation_epsilon_simple G d.
 
-  (* Definition 8 II.iii *)
+  (* Definition 9 II.iii *)
   Definition cfg_leaf_prime_derivation
       (G : context_free_grammar)
       (alpha : cfg_sentential_form (cfg_nonterminal G))
@@ -240,7 +240,7 @@ Section RightLinearGrammar.
     cfg_derivation_maximal_epsilon_simple_in
       G (cfg_leaf_derivation_set G alpha) d.
 
-  (* Definition 9 I *)
+  (* Definition 10 I *)
   Definition cfg_prime_unambiguous
       (G : context_free_grammar) : Prop :=
     forall w d1 d2,
@@ -248,7 +248,7 @@ Section RightLinearGrammar.
       cfg_da_prime_derivation G w d2 ->
       d1 = d2.
 
-  (* Definition 9 II *)
+  (* Definition 10 II *)
   Definition cfg_prime_reach_unambiguous
       (G : context_free_grammar) : Prop :=
     forall alpha X d1 d2,
@@ -256,7 +256,7 @@ Section RightLinearGrammar.
       cfg_dra_prime_derivation G alpha X d2 ->
       d1 = d2.
 
-  (* Definition 9 III *)
+  (* Definition 10 III *)
   Definition cfg_prime_leaf_unambiguous
       (G : context_free_grammar) : Prop :=
     forall alpha d1 d2,
@@ -796,7 +796,7 @@ Section RightLinearGrammar.
   Definition reach_ambiguity_cfg_leaf_unambiguous :=
     cfg_prime_leaf_unambiguous.
 
-  (** Definitions 8/9 base semantics: a right-linear grammar derives a
+  (** Definitions 9/10 base semantics: a right-linear grammar derives a
       terminal word from a nonterminal.  The explicit derivation layer below
       keeps production sequences so ambiguity can distinguish derivations. *)
   Definition reach_ambiguity_cfg_self_loop : context_free_grammar :=
@@ -903,7 +903,7 @@ Section RightLinearGrammar.
         rlg_derives_from G Y v ->
         rlg_derives_from G X (u ++ v).
 
-  (** Definitions 8/9 explicit derivations.  Unlike [rlg_derives_from],
+  (** Definitions 9/10 explicit derivations.  Unlike [rlg_derives_from],
       [rlg_derivation] stores the production sequence, so equality of
       accepting derivations can be stated directly. *)
   Definition rlg_derivation (G : right_linear_grammar) : Type :=
@@ -937,7 +937,7 @@ Section RightLinearGrammar.
     rlg_derivation_valid G (rlg_start G) d None /\
     rlg_derivation_word G d = w.
 
-  (** Bounded enumeration interface connecting the Definitions 8/9 counting
+  (** Bounded enumeration interface connecting the Definitions 9/10 counting
       specs to executable finite lists. *)
   Fixpoint rlg_derivations_from_fuel
       (G : right_linear_grammar)
@@ -1210,7 +1210,7 @@ Section RightLinearGrammar.
       (d : rlg_derivation G) : bool :=
     word_eqb prefix (firstn (length prefix) (rlg_derivation_word G d)).
 
-  (** Definitions 8/9 bounded counts: [rlg_da_count] counts accepting
+  (** Definitions 9/10 bounded counts: [rlg_da_count] counts accepting
       derivations, [rlg_dra_count] counts prefix derivations reaching a given
       nonterminal, and [rlg_leaf_count] counts accepting derivations with the
       given prefix. *)
@@ -1248,7 +1248,7 @@ Section RightLinearGrammar.
          (rlg_derivation_leafb G word_eqb prefix)
          (rlg_derivations_from_fuel G nt_eqb fuel (rlg_start G))).
 
-  (** Definitions 8/9 prime counts: add epsilon-simple and maximal filters to
+  (** Definitions 9/10 prime counts: add epsilon-simple and maximal filters to
       the unprimed counts, matching the paper's [da'], [dra'], and [Leaf']. *)
   Definition rlg_da_prime_count
       (G : right_linear_grammar)
@@ -1743,7 +1743,7 @@ Section RightLinearGrammar.
       (prefix : list A) : Prop :=
     exists suffix, rlg_derives_from G (rlg_start G) (prefix ++ suffix).
 
-  (** Definitions 8/9 Prop-level specs.  These fuel-independent predicates
+  (** Definitions 9/10 Prop-level specs.  These fuel-independent predicates
       express ordinary, reach, and leaf unambiguity directly over explicit
       derivations. *)
   Definition rlg_derivation_reaches
@@ -1783,7 +1783,7 @@ Section RightLinearGrammar.
       rlg_derivation_leaf G prefix d2 ->
       d1 = d2.
 
-  (** Definitions 8/9 prime/refined specs.  These predicates compare only
+  (** Definitions 9/10 prime/refined specs.  These predicates compare only
       epsilon-simple/maximal derivations and are the versions bridged to
       [enfa_UFA], [enfa_ReachUFA], and [enfa_LeafUFA]. *)
   Definition rlg_derivation_accepting_prime
@@ -2020,7 +2020,7 @@ Section RightLinearGrammar.
       rlg_productions := gamma_productions m
     |}.
 
-  (** Definition 8/9 aliases on the Gamma side.  They name prime RLG
+  (** Definitions 9/10 aliases on the Gamma side.  They name prime RLG
       unambiguity, reach-unambiguity, and leaf-unambiguity for [Gamma(M)] so
       the bridge theorems can state preservation directly. *)
   Definition gamma_rlg_unambiguous
@@ -4071,7 +4071,7 @@ Section RightLinearGrammar.
     rewrite Hsimple, Hmax. simpl. auto.
   Qed.
 
-  (** Gamma bridge between Definition 6 and Definitions 8/9.  The six
+  (** Gamma bridge between Definition 6 and Definitions 9/10.  The six
       directions relate ENFA [UFA], [ReachUFA], and [LeafUFA] to prime
       unambiguity, reach-unambiguity, and leaf-unambiguity of [Gamma(M)].
       The finite-enumeration hypotheses are listed in the statements:

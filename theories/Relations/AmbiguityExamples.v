@@ -31,7 +31,7 @@ Section AmbiguityExamples.
 
       The one-production CFG [S -> S] has infinitely many distinct rightmost
       reach derivations for the same marked reach fiber.  This example
-      illustrates the extended-cardinality reading used for Definition 8. *)
+      illustrates the extended-cardinality reading used for Definition 9. *)
   Definition cfg_self_loop_example : @context_free_grammar bool :=
     @reach_ambiguity_cfg_self_loop bool.
 
@@ -4409,7 +4409,7 @@ Section AmbiguityExamples.
       (suffix_ambiguity_family_m 3) (suffix_ambiguity_family_attack_word 3) = 3 + 3.
   Proof. vm_compute. reflexivity. Qed.
 
-  (** Gamma trace/derivation and Definitions 8/9 bridge examples.  This block
+  (** Gamma trace/derivation and Definitions 9/10 bridge examples.  This block
       includes roundtrip and epsilon-simple equalities, plus theorem calls from
       ReachUFA/LeafUFA to Gamma RLG unambiguity. *)
   Example unit_bool_gamma_trace_roundtrip :
@@ -4520,8 +4520,8 @@ Section AmbiguityExamples.
     discriminate.
   Qed.
 
-  (** LR(1) examples.  The first examples check the Theorem 6/7 machine
-      structure and [conflicts <= leaves] counting interface; later examples
+  (** LR(1) examples.  The first examples check the Definition 11 machine
+      structure and Theorem 6 [conflicts <= leaves] counting interface; later examples
       separate Gamma semantic conflicts from the canonical item-set predicate
       and include a directly computed [gamma_canonical_lr1] positive case. *)
   Example unit_bool_lr1_machine_characterization :
